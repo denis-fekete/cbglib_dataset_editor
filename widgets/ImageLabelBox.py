@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QRectF, QPointF
 from utils.pointInRectangle import pointInRectangle
 
 class ImageLabelBox(QtWidgets.QGraphicsItem):
-    def __init__(self, rect: QRectF, label: int, labelText: str, handle_fn, imageRect: QRectF):
+    def __init__(self, rect: QRectF, label: int, labelText: str, handle_fn, imageRect: QRectF, selectedColor: QColor = None, defaultColor: QColor = None):
         super().__init__()
 
         self.label: int = label
@@ -23,14 +23,7 @@ class ImageLabelBox(QtWidgets.QGraphicsItem):
         self._handle_fn = handle_fn if (handle_fn is not None) else (lambda: 50)
         self._handleSize: float = self._handle_fn()
 
-        self._color: QColor = QColor(40, 40, 40)
-        self._selectedColor: QColor = QColor(100, 100, 255)
-
-        self._penWidth: float = 5
-        self._pen: QPen = QPen(QBrush(self._color), self._penWidth, s=Qt.PenStyle.SolidLine)
-
-        self._backgroundBrush: QBrush = QBrush(self._color, Qt.BrushStyle.BDiagPattern)
-        self._handleBrush: QBrush = QBrush(self._color, Qt.BrushStyle.SolidPattern)
+        self.updateColors(defaultColor, selectedColor)
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges, True) 
@@ -53,9 +46,9 @@ class ImageLabelBox(QtWidgets.QGraphicsItem):
             self._backgroundBrush.setColor(self._selectedColor)
             self._handleBrush.setColor(self._selectedColor)
         else:
-            self._pen.setColor(self._color)
-            self._backgroundBrush.setColor(self._color)
-            self._handleBrush.setColor(self._color)
+            self._pen.setColor(self._defaultColor)
+            self._backgroundBrush.setColor(self._defaultColor)
+            self._handleBrush.setColor(self._defaultColor)
 
         painter.setPen(self._pen)
             
@@ -231,6 +224,18 @@ class ImageLabelBox(QtWidgets.QGraphicsItem):
         """Sets label and labelText of ImageLabelBox"""
         self.label = label
         self.labelText = labelText
+        self.update()
+
+    def updateColors(self, defaultColor, selectedColor):
+        self._defaultColor: QColor = defaultColor if (defaultColor is not None and defaultColor.isValid()) else QColor(40, 40, 40) 
+        self._selectedColor: QColor = selectedColor if (selectedColor is not None and selectedColor.isValid()) else QColor(100, 100, 255)
+
+        self._penWidth: float = 5
+        self._pen: QPen = QPen(QBrush(self._defaultColor), self._penWidth, s=Qt.PenStyle.SolidLine)
+
+        self._backgroundBrush: QBrush = QBrush(self._defaultColor, Qt.BrushStyle.BDiagPattern)
+        self._handleBrush: QBrush = QBrush(self._defaultColor, Qt.BrushStyle.SolidPattern)
+
         self.update()
 
     def width(self) -> float:

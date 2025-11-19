@@ -1,5 +1,5 @@
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QColor
 from PySide6.QtWidgets import QGraphicsScene
 
 import cv2 as cv 
@@ -73,7 +73,7 @@ class ImageSample():
             except:
                 raise Exception(f"Error: Label image exists but cannot be read: {lblPath}")
 
-    def load(self) -> None:
+    def load(self, selectedColor: QColor = None, defaultColor: QColor = None) -> None:
         """
         Loads internal list of `LabelBox` objects into the list of `ImageLabelBox` objects.
         """
@@ -88,7 +88,9 @@ class ImageSample():
                     label.label, 
                     self.labelsDict[label.label].name if (label.label >= 0) else "default", 
                     self._handle_fn,
-                    self.rect())
+                    self.rect(),
+                    selectedColor=selectedColor,
+                    defaultColor=defaultColor)
                 self.imageLabelBoxes.append(newLabel)
                 print(f"\tsaved label:{label.label}, x:{label.x}, y:{label.y}, w:{label.width}, h:{label.height}")
 

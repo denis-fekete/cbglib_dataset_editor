@@ -6,8 +6,9 @@ import cv2 as cv
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Qt, QRectF, QPointF, QModelIndex, QItemSelection
-from PySide6.QtGui import QBrush, QPixmap, QScreen, QShortcut, QKeySequence, QCursor
+from PySide6.QtGui import QBrush, QPixmap, QScreen, QShortcut, QKeySequence, QCursor, QColor
 
+from widgets.ColorPicker import ColorPicker
 from widgets import ImageScene, ZoomGraphicsView, ImageLabelBox
 from widgets.LabelSelectorTreeView import LabelSelectorTreeView, LabelEntry
 from widgets.ImageSampleTreeView import ImageSampleTreeView
@@ -62,6 +63,15 @@ class DataLabeler(QtWidgets.QWidget):
         self._btnDeleteLabel.setMaximumWidth(100)
         self._topToolbarContainer.layout().addWidget(self._btnDeleteLabel)
         self._topToolbarContainer.layout().addWidget(QtWidgets.QLabel("(Del)"))
+
+        self._selectedColorPicker = ColorPicker(QColor(160, 255, 160), self._updateImageLabelBoxesColors)
+        self._selectedColorPicker.setMaximumWidth(50)
+
+        self._defaultColorPicker = ColorPicker(QColor(10, 10, 10), self._updateImageLabelBoxesColors)
+        self._defaultColorPicker.setMaximumWidth(50)
+        
+        self._topToolbarContainer.layout().addWidget(self._selectedColorPicker)
+        self._topToolbarContainer.layout().addWidget(self._defaultColorPicker)
 
         self._btnNewLabel.clicked.connect(self.newImageLabelBox_slot)
         self._btnDeleteLabel.clicked.connect(self.deleteImageLabelBox_slot)
@@ -119,9 +129,9 @@ class DataLabeler(QtWidgets.QWidget):
         self._imageSampleSelectorContainer.layout().addWidget(self._btnPreviousImageSample, 2, 0)
         self._imageSampleSelectorContainer.layout().addWidget(self._btnNextImageSample, 2, 1)
 
-        labelPrevious = QtWidgets.QLabel("(Ctrl+E)")
+        labelPrevious = QtWidgets.QLabel("(Ctrl+Q)")
         labelPrevious.setContentsMargins(30, 0, 0 , 0)
-        labelNext = QtWidgets.QLabel("(Ctrl+R)")
+        labelNext = QtWidgets.QLabel("(Ctrl+E)")
         labelNext.setContentsMargins(30, 0, 0 , 0)
 
         self._imageSampleSelectorContainer.layout().addWidget(labelPrevious, 3, 0)
@@ -181,7 +191,7 @@ class DataLabeler(QtWidgets.QWidget):
             
     def loadImageSample(self):
         """Loads `currentImageSample` image sample into current graphics scene and corrects size and zoom of screen"""
-        self.currentImageSample.load()
+        self.currentImageSample.load(self._selectedColorPicker.color, self._defaultColorPicker.color)
 
         self.scene.clear()
         self.view.resetZoom()
@@ -343,6 +353,14 @@ class DataLabeler(QtWidgets.QWidget):
                                                                checkLabelBoxes=False,
                                                                checkImageLabelBoxes=True)
         pass
+
+    def _updateImageLabelBoxesColors(self):
+        if (self.currentImageSample is None):
+            return
+        
+        for imageLabelBox in self.currentImageSample.imageLabelBoxes:
+            imageLabelBox.updateColors(defaultColor=self._defaultColorPicker.color,
+                                       selectedColor=self._selectedColorPicker.color)
 
     def tab_selected(self):
         """Slot called on change of tabs"""
