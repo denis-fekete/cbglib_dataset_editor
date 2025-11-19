@@ -135,6 +135,12 @@ class DataLabeler(QtWidgets.QWidget):
         self._shortcutDeleteLabel = QShortcut(QKeySequence("Del"), self)
         self._shortcutDeleteLabel.activated.connect(self.deleteImageLabelBox_slot)
 
+        self._shortcutNextImageSample = QShortcut(QKeySequence("Ctrl+E"), self)
+        self._shortcutNextImageSample.activated.connect(self.nextImageSample_slot)
+
+        self._shortcutPreviousImageSample = QShortcut(QKeySequence("Ctrl+Q"), self)
+        self._shortcutPreviousImageSample.activated.connect(self.previousImageSample_slot)
+
     def _correctSceneAndView(self):
         """Corrects scale of `QGraphicsView` based on loaded `ImageSample`"""
         self.view.resetTransform()
@@ -308,29 +314,22 @@ class DataLabeler(QtWidgets.QWidget):
         self._labelSelector.loadLabels()
 
     def nextImageSample_slot(self):
-        print("hello")
         if(self.currentImageSample is None):
             return 
-        print("hello 2")
 
         currentIndex = self._imageSampleTreeView.currentIndex()
         nextIndex = self._imageSampleTreeView.indexBelow(currentIndex)
-        print(f"Changing from: ({currentIndex.data()}) to: ({nextIndex.data()})")
         if(nextIndex.isValid()):
             self._imageSampleTreeView.setCurrentIndex(nextIndex)
-        pass
 
     def previousImageSample_slot(self):
         if(self.currentImageSample is None):
             return 
 
-        currentIndex = self._imageSampleTreeView.selectionModel().currentIndex()
-        if(currentIndex.row() < 1):
-            return
-        previousIndex = self._imageSampleTreeView.model.index(currentIndex.row() - 1, currentIndex.column())
-        print(f"Changing from: ({currentIndex.data()}) to: ({previousIndex.data()})")
-
-        self.datasetItemSelected_slot(previousIndex)
+        currentIndex = self._imageSampleTreeView.currentIndex()
+        previousIndex = self._imageSampleTreeView.indexAbove(currentIndex)
+        if(previousIndex.isValid()):
+            self._imageSampleTreeView.setCurrentIndex(previousIndex)
 
     def _handleScaleByView(self):
         """Returns maximum width or height of windows. Used for scaling different UI elements"""
