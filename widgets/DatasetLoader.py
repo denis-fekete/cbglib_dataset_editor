@@ -1,6 +1,8 @@
 import sys
 import os
 from pathlib import Path
+import random
+import math
 
 import yaml
 import cv2 as cv
@@ -147,20 +149,32 @@ class DatasetLoader(QtWidgets.QWidget):
         fileDict = self.loadFilesDictionary()
         for item in fileDict:
             if(item["ext"] == ".jpg"):
-                matches = []
+                labels = []
                 for _item in fileDict:
                     if(_item["ext"] == ".txt" and _item["name"] == item["name"]):
-                        matches.append(_item)
+                        labels.append(_item)
 
-                if(len(matches) > 1):
-                    raise Exception(f"Multiple label (.txt) files found for one image (.jpg file) {matches}")
-                else:
-                    match = matches[0] if len(matches) > 0 else None
-                    matchPath = match["path"] if (match is not None) else None
-                    self.imageSamples.append(ImageSample(self.importRootPath, item["name"], item["path"], matchPath, self.labelsDict, self.handle_fn))
+                if(len(labels) > 1):
+                    raise Exception(f"Multiple label (.txt) files found for one image (.jpg file): {labels}")
+                
+                label = labels[0] if len(labels) > 0 else None
+                labelPath = label["filePath"] if (label is not None) else None
+                labelExt = label["ext"] if (label is not None) else None
+
+                self.imageSamples.append(ImageSample(
+                    rootPath = self.importRootPath, 
+                    name = item["name"], 
+                    imagePath = item["filePath"], 
+                    imageExt = item["ext"],
+                    labelPath = labelPath,
+                    labelExt = labelExt,
+                    labelsDict = self.labelsDict, 
+                    handle_fn = self.handle_fn))
+                
+                    
             elif(item["ext"] == ".yaml" and item["name"] == "data"):
                 if(self.dataYamlPath is None):
-                    self.dataYamlPath = Path(self.importRootPath) / item["path"]
+                    self.dataYamlPath = Path(self.importRootPath) / item["filePath"] / (item["name"] + item["ext"])
                 else:
                     raise Exception("Error: Found multiple data.yaml files. Only one or none (will get created automatically) should be in dataset!")
                 
@@ -216,12 +230,12 @@ class DatasetLoader(QtWidgets.QWidget):
 
         fileDict = []
         for file in rawFiles:
-            fullPath = Path(self.importRootPath) / file
-
+            fullPath: Path = Path(self.importRootPath) / file
+            filePath = str(Path(file).parent)
             fileName = fullPath.stem
             ext = fullPath.suffix
 
-            fileDict.append({"name": fileName, "path": file, "ext": ext})
+            fileDict.append({"name": fileName, "filePath": filePath, "ext": ext})
 
         return fileDict
 
@@ -231,6 +245,7 @@ class DatasetLoader(QtWidgets.QWidget):
         imagesPath = rootPath / "images"
         trainImagesPath = imagesPath / "train"
         valImagesPath = imagesPath / "val"
+
         labelsPath = rootPath / "labels"
         trainLabelPath = labelsPath / "train"
         valLabelPath = labelsPath / "val"
@@ -246,9 +261,8 @@ class DatasetLoader(QtWidgets.QWidget):
         for label in self.labelsDict.values():
             namesDict[label.index] = label.name
 
-
         dataYaml = {
-            "path": rootPath.name,
+            "filePath": rootPath.name,
             "train": "images/train",
             "val": "images/val",
             # "test": "# not used",
@@ -258,9 +272,28 @@ class DatasetLoader(QtWidgets.QWidget):
         with open(rootPath / "data.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(dataYaml, f, sort_keys=False)
 
+        trainImageSamples = []
+        valImageSamples = []
+        VALIDATION_THRESHOLD_PERCENT = 30
+        VALIDATION_THRESHOLD_MAX = 20
+
         for imageSample in self.imageSamples:
+            
+            if(random.randint(0, 100) < VALIDATION_THRESHOLD_PERCENT and 
+               len(valImageSamples) <= VALIDATION_THRESHOLD_MAX):
+                valImageSamples.append(imageSample)
+            else:
+                trainImageSamples.append(imageSample)
+
+        for imageSample in trainImageSamples:
             imageSample: ImageSample = imageSample
-            imageSample.save(self.exportRootPath)
+            imageSample.save(exportImagePath=trainImagesPath,
+                             exportLabelPath=trainLabelPath)
+
+        for imageSample in valImageSamples:
+            imageSample: ImageSample = imageSample
+            imageSample.save(exportImagePath=valImagesPath,
+                             exportLabelPath=valLabelPath)
 
     def tab_selected(self):
         self.incorrectLabels = self.datasetTreeView.loadSamplesFull(restoreVerticalPosition=True)

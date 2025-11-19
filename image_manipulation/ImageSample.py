@@ -13,11 +13,13 @@ from .LabelBox import LabelBox
 from widgets.LabelSelectorTreeView import LabelEntry
 
 class ImageSample():
-    def __init__(self, rootPath: str, name: str, imagePath: str, labelPath: str, labelsDict: list[int, LabelEntry],handle_fn):
+    def __init__(self, rootPath: str, name: str, imagePath: str, labelPath: str, imageExt: str, labelExt: str, labelsDict: list[int, LabelEntry],handle_fn):
         self.rootPath: str = rootPath 
         self.name: str = name
         self.imagePath: str = imagePath
         self.labelPath: str = labelPath
+        self.imageExt: str = imageExt
+        self.labelExt: str = labelExt
         self._handle_fn = handle_fn
         self.labelsDict: dict[int, LabelEntry] = labelsDict
 
@@ -35,17 +37,17 @@ class ImageSample():
         If image does not exist an exception is raised. For non existing label file no exception is raised.
         """
 
-        imgPath = Path(self.rootPath) / self.imagePath
+        imgPath = Path(self.rootPath) / self.imagePath / (self.name + self.imageExt)
         if(imgPath.is_file()):
             self.cvImage = cv.imread(imgPath)
             self.height , self.width = self.cvImage.shape[:2]
         else:
             raise Exception(f"Error: Image file does not exist: {imgPath}")
 
-        if(skipLabel or self.labelPath is None):
+        if(skipLabel or self.labelPath is None or self.labelExt is None):
             return
         
-        lblPath = Path(self.rootPath) / self.labelPath 
+        lblPath = Path(self.rootPath) / self.labelPath  / (self.name + self.labelExt)
         if(lblPath.is_file()):
             lastModified = datetime.fromtimestamp(lblPath.stat().st_mtime)
 
@@ -108,36 +110,32 @@ class ImageSample():
         self.imageLabelBoxes.clear()
         self.cvImage = None
 
-    def save(self, exportRootPath: str = None, exportImagePath: str = None, exportLabelPath: str = None) -> None:
+    def save(self, exportImagePath: str = None, exportLabelPath: str = None) -> None:
         """
         Saves current `ImageSample` labels into label file based on `rootPath` and `labelPath`.
         """
-        rootPath = exportRootPath if (exportRootPath is not None) else self.rootPath
         imagePath = exportImagePath if (exportImagePath is not None) else self.imagePath
-        labelPath = exportRootPath if (labelPath is not None) else self.labelPath
+        labelPath = exportLabelPath if (exportLabelPath is not None) else self.labelPath
 
-        if (rootPath is None):
-            raise Exception("Root path for saving ImageSample is not valid")
         if (imagePath is None):
             raise Exception("Image path for saving ImageSample is not valid")
         if (labelPath is None):
             raise Exception("Label path for saving ImageSample is not valid")
         
-        print(f"Start saving of ImageSample({self.name}) to '{rootPath}'")
-
         if(self.cvImage is None):
-            self._loadImageAndLabel(skipLabel=True)
+            self._loadImageAndLabel(skipLabel=False)
 
-        fullImagePath = Path(rootPath) /  imagePath
+        fullImagePath = imagePath / (self.name + self.imageExt)
         cv.imwrite(fullImagePath, self.cvImage)
 
-        fullLabelPath = Path(rootPath) / self.labelPath
+        labelExt = self.labelExt if (self.labelExt is not None) else ".txt"
+        fullLabelPath = labelPath / (self.name + labelExt)
+
         with open(fullLabelPath, 'w') as f:
             for labelBox in self._labelBoxes:
                 x, y, w, h = labelBox.getDimensionTuple()
                 x, y, w, h = Pixels2Norm(x, y, w, h, 
                                         self.width, self.height)
-                print(f"\tadded {labelBox.label} {x}, {y}, {w}, {h}")
                 f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
 
     def reloadImageLabels(self):
