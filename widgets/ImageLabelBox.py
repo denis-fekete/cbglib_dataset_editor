@@ -1,9 +1,9 @@
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtWidgets
 from PySide6.QtWidgets import QGraphicsItem
 from PySide6.QtGui import QPainter, QPainterPath, QPen, QBrush, QColor, QFont, QMouseEvent
 from PySide6.QtCore import Qt, QRectF, QPointF
 
-from utils.pointInRectangle import pointInRectangle
+from utils import *
 
 class ImageLabelBox(QtWidgets.QGraphicsItem):
     def __init__(self, rect: QRectF, label: int, labelText: str, handle_fn, imageRect: QRectF, selectedColor: QColor = None, defaultColor: QColor = None):

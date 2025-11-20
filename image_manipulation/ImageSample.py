@@ -1,16 +1,16 @@
-from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPixmap, QColor
-from PySide6.QtWidgets import QGraphicsScene
-
-import cv2 as cv 
 from pathlib import Path
 import os
 from datetime import datetime
 
-from widgets import ImageLabelBox
-from utils.convertors import *
+import cv2 as cv 
+
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPixmap, QColor
+
+from widgets import *
+from utils import *
 from .LabelBox import LabelBox
-from widgets.LabelSelectorTreeView import LabelEntry
+from .LabelEntry import LabelEntry
 
 class ImageSample():
     def __init__(self, rootPath: str, name: str, imagePath: str, labelPath: str, imageExt: str, labelExt: str, labelsDict: list[int, LabelEntry],handle_fn):

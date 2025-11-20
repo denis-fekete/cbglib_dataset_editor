@@ -1,8 +1,8 @@
-from PySide6.QtWidgets import QGraphicsView, QGraphicsItem, QGraphicsScene
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
 from PySide6.QtGui import QPainter, QMouseEvent, QWheelEvent
 from PySide6.QtCore import Qt
 
-from widgets.ImageLabelBox import ImageLabelBox
+from widgets import *
 
 class ZoomGraphicsView(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, onGraphicsItemClickSlot_fn, parent=None):

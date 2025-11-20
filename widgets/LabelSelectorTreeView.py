@@ -1,13 +1,8 @@
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import QItemSelectionModel, QModelIndex, Qt
-from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QHeaderView
 
-class LabelEntry():
-    def __init__(self, name: str, index: int, shortcut: QKeySequence = None):
-        self.name: str = name
-        self.index: int = index
-        self.shortcut: QKeySequence = shortcut
+from image_manipulation import * 
 
 class LabelSelectorTreeView(QtWidgets.QTreeView):
     def __init__(self, labels: dict[int, LabelEntry]):

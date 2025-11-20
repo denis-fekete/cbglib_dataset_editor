@@ -1,9 +1,9 @@
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QHeaderView, QAbstractItemView
 from PySide6.QtGui import QStandardItem
 
-from image_manipulation.ImageSample import ImageSample
+from image_manipulation import *
 
 class ImageSampleTreeView(QtWidgets.QTreeView):
     def __init__(self, imageSamples):

@@ -1,12 +1,11 @@
 import sys
-import os
-from pathlib import Path
 
 from PySide6 import QtWidgets
-from PySide6.QtGui import QScreen, QKeySequence
+from PySide6.QtGui import QScreen
 
 from widgets import *
 from utils import *
+from activities import *
 
 ##############################################################################
 

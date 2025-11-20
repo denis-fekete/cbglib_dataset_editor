@@ -1,7 +1,8 @@
-import cv2 as cv
 import numpy as np
-from PySide6.QtGui import QImage
+
 import cv2 as cv
+
+from PySide6.QtGui import QImage
 
 def QImage2Mat(qimage: QImage) -> cv.Mat:
     mat = cv.Mat()

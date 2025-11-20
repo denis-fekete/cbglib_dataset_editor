@@ -1,20 +1,12 @@
-import sys
-import os
-from pathlib import Path
-
 import cv2 as cv
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Qt, QRectF, QPointF, QModelIndex, QItemSelection
 from PySide6.QtGui import QBrush, QPixmap, QScreen, QShortcut, QKeySequence, QCursor, QColor
 
-from widgets.ColorPicker import ColorPicker
-from widgets import ImageScene, ZoomGraphicsView, ImageLabelBox
-from widgets.LabelSelectorTreeView import LabelSelectorTreeView, LabelEntry
-from widgets.ImageSampleTreeView import ImageSampleTreeView
-from utils.pointInRectangle import pointInRectangle
-import model_training
-from image_manipulation import ImageSample
+from widgets import *
+from utils import *
+from image_manipulation import *
 
 class DataLabeler(QtWidgets.QWidget):
     def __init__(self, imageSamples: list[ImageLabelBox], labelsDict: dict[int, LabelEntry], screen: QScreen):
