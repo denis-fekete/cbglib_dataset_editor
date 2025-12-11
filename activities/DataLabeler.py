@@ -18,17 +18,17 @@ class DataLabeler(QtWidgets.QWidget):
 
         self._screen: QScreen = screen
 
-        self.initUI()
+        self._initUI()
         self.initShortcuts()
 
-    def initUI(self):
+    def _initUI(self):
         self.setLayout(QtWidgets.QGridLayout())
 
-        self.scene = ImageScene()
-        self.view = ZoomGraphicsView(self.scene, self.onGraphicsItemClickSlot)
+        self._scene = ImageScene()
+        self._view = ZoomGraphicsView(self._scene, self.onGraphicsItemClickSlot)
         
-        self.scene.setBackgroundBrush(QBrush(QtCore.Qt.GlobalColor.white))
-        self.scene.setSceneRect(0, 0, self.view.rect().width() * 0.9, self.view.rect().height() * 0.9)
+        self._scene.setBackgroundBrush(QBrush(QtCore.Qt.GlobalColor.white))
+        self._scene.setSceneRect(0, 0, self._view.rect().width() * 0.9, self._view.rect().height() * 0.9)
 
         self._initLabelSelectorContainer()
         self._initImageSampleSelectorContainer()
@@ -37,7 +37,7 @@ class DataLabeler(QtWidgets.QWidget):
 
         self.layout().addWidget(self._topToolbarContainer, 0, 1)
         self.layout().addWidget(self._selectorsContainer, 1, 0)
-        self.layout().addWidget(self.view, 1, 1)
+        self.layout().addWidget(self._view, 1, 1)
         
     def _initTopToolbarContainer(self):
         self._topToolbarContainer = QtWidgets.QWidget()
@@ -106,7 +106,6 @@ class DataLabeler(QtWidgets.QWidget):
 
         self._imageSampleTreeView = ImageSampleTreeView(self.imageSamples)
         self._imageSampleTreeView.loadSamples()
-        # self._imageSampleTreeView.clicked.connect(self.datasetItemSelected_slot)
         self._imageSampleTreeView.selectionModel().currentChanged.connect(self.imageSampleChanged_slot)
 
         self._btnNextImageSample = QtWidgets.QPushButton("Next")
@@ -145,15 +144,15 @@ class DataLabeler(QtWidgets.QWidget):
 
     def _correctSceneAndView(self):
         """Corrects scale of `QGraphicsView` based on loaded `ImageSample`"""
-        self.view.resetTransform()
+        self._view.resetTransform()
 
-        wScale = self.view.rect().width() / self.currentImageSample.width
-        hScale = self.view.rect().height() / self.currentImageSample.height
+        wScale = self._view.rect().width() / self.currentImageSample.width
+        hScale = self._view.rect().height() / self.currentImageSample.height
 
         scale = min(wScale, hScale)
 
         SCALE_CONST = 0.02 # constant for zooming out move to get rid of sliders on sides
-        self.view.scale(scale - SCALE_CONST, scale - SCALE_CONST)
+        self._view.scale(scale - SCALE_CONST, scale - SCALE_CONST)
     
     def imageSampleChanged_slot(self, current: QModelIndex, previous: QModelIndex):
         """Slot called when `ImageSample`from QTreeView dataset was changed"""
@@ -185,15 +184,15 @@ class DataLabeler(QtWidgets.QWidget):
         """Loads `currentImageSample` image sample into current graphics scene and corrects size and zoom of screen"""
         self.currentImageSample.load(self._selectedColorPicker.color, self._defaultColorPicker.color)
 
-        self.scene.clear()
-        self.view.resetZoom()
-        self.view.selectedItem = None
+        self._scene.clear()
+        self._view.resetZoom()
+        self._view.selectedItem = None
 
-        self.scene.setPixmap(self.currentImageSample.getQPixmap())
-        self.scene.setSceneRect(0, 0, self.currentImageSample.width, self.currentImageSample.height)
+        self._scene.setPixmap(self.currentImageSample.getQPixmap())
+        self._scene.setSceneRect(0, 0, self.currentImageSample.width, self.currentImageSample.height)
         
         for imageLabelBox in self.currentImageSample.imageLabelBoxes:
-            self.scene.addItem(imageLabelBox)
+            self._scene.addItem(imageLabelBox)
 
         self._correctSceneAndView()
 
@@ -209,7 +208,7 @@ class DataLabeler(QtWidgets.QWidget):
         self._labelSelector.selectLabel(index)
        
         if(self.currentImageSample is not None):
-            selectedLabelBox: ImageLabelBox = self.view.selectedItem
+            selectedLabelBox: ImageLabelBox = self._view.selectedItem
             
             if(selectedLabelBox is not None):
                 model = index.model()
@@ -245,16 +244,16 @@ class DataLabeler(QtWidgets.QWidget):
         
         defaultW, defaultH = 100, 200
         defaultLabelIndex, defaultLabelName = -1, "default"
-        defaultX, defaultY = self.scene.sceneRect().width() / 2, self.scene.sceneRect().height() / 2
+        defaultX, defaultY = self._scene.sceneRect().width() / 2, self._scene.sceneRect().height() / 2
         
         if(self._labelSelector.currentIndex is not None): 
             defaultLabelIndex = self._labelSelector.currentIndex
             defaultLabelName = self.labelsDict[defaultLabelIndex].name
 
-        globalPosition = self.view.mapFromGlobal(QCursor.pos())
-        scenePosition = self.view.mapToScene(globalPosition)
+        globalPosition = self._view.mapFromGlobal(QCursor.pos())
+        scenePosition = self._view.mapToScene(globalPosition)
 
-        if(pointInRectangle(scenePosition, self.scene.sceneRect())):
+        if(pointInRectangle(scenePosition, self._scene.sceneRect())):
             defaultX, defaultY = scenePosition.x(), scenePosition.y()
         
         newLabelBox = ImageLabelBox(QRectF( defaultX,
@@ -266,13 +265,13 @@ class DataLabeler(QtWidgets.QWidget):
                                     self.currentImageSample.rect())
         
         self.currentImageSample.add(newLabelBox)
-        self.scene.addItem(newLabelBox)
+        self._scene.addItem(newLabelBox)
 
     def deleteImageLabelBox_slot(self):
         """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
-        self.currentImageSample.remove(self.view.selectedItem)
-        self.scene.removeItem(self.view.selectedItem)
-        self.view.selectedItem = None
+        self.currentImageSample.remove(self._view.selectedItem)
+        self._scene.removeItem(self._view.selectedItem)
+        self._view.selectedItem = None
 
     def newLabel_slot(self):
         """Creates new `LabelEntry` into global dictionary of labels"""
@@ -354,16 +353,19 @@ class DataLabeler(QtWidgets.QWidget):
             imageLabelBox.updateColors(defaultColor=self._defaultColorPicker.color,
                                        selectedColor=self._selectedColorPicker.color)
 
+    def getCurrentImageSample(self):
+        return self.currentImageSample
+
     def tab_selected(self):
         """Slot called on change of tabs"""
         self._imageSampleTreeView.loadSamples(restoreVerticalPosition=True)
         self._labelSelector.loadLabels()
         
-        self.view.selectedItem = None
+        self._view.selectedItem = None
         if(self.currentImageSample is not None):
             self.loadImageSample()
 
     def tab_closed(self):
         if(self.currentImageSample is not None):
             self.currentImageSample.unload(save=True)
-        self.scene.clear()
+        self._scene.clear()

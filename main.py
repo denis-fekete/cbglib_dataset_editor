@@ -6,6 +6,7 @@ from PySide6.QtGui import QScreen
 from widgets import *
 from utils import *
 from activities import *
+from image_manipulation import *
 
 ##############################################################################
 
@@ -13,13 +14,16 @@ class MyWindow(QtWidgets.QMainWindow):
     def __init__(self, qtApp):
         super().__init__()
         self.qtApp = qtApp
-        self.imageSamples = []
         self._screen: QScreen = self.qtApp.primaryScreen()
+
+        self.imageSamples = []
         self.labelsDict: dict[int, LabelEntry] = {}
+        self.filterPresets : list[FilterPreset] = getDefaultFilterPresets()
+        
         self.lastIndex = None
 
         self.initWindow()
-        self.initUI()
+        self._initUI()
 
         
     def initWindow(self):
@@ -37,20 +41,22 @@ class MyWindow(QtWidgets.QMainWindow):
             int(windowHeight),
         )
 
-        self.showMaximized()
-
-    def initUI(self):
+    def _initUI(self):
         self.mainUI = QtWidgets.QTabWidget()
         self.dataLabelerWidget = DataLabeler(self.imageSamples, self.labelsDict, self._screen) 
-        self.datasetWidget = DatasetLoader(self.imageSamples, self.labelsDict, self.dataLabelerWidget._handleScaleByView) 
-        self.modelTrainingWidget = QtWidgets.QWidget() 
+        self.datasetWidget = DatasetLoader(self.imageSamples, self.labelsDict, self.filterPresets, self.dataLabelerWidget._handleScaleByView) 
+        self.syntheticDataCreatorWidget = SyntheticDataCreator(self.dataLabelerWidget.getCurrentImageSample, self.filterPresets)
+        self.modelTrainerWidget = ModelTrainer()
 
         self.mainUI.addTab(self.datasetWidget, "Dataset")
         self.mainUI.addTab(self.dataLabelerWidget, "Image labeling")
-        self.mainUI.addTab(self.modelTrainingWidget, "Training")
+        self.mainUI.addTab(self.syntheticDataCreatorWidget, "Synthetic data")
+        self.mainUI.addTab(self.modelTrainerWidget, "Training")
 
         self.mainUI.currentChanged.connect(self.tab_changed)
         self.setCentralWidget(self.mainUI)
+
+        self.showMaximized()
 
     def tab_changed(self, index):
         if(self.lastIndex is not None):

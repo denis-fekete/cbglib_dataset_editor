@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt
 from widgets import *
 
 class ZoomGraphicsView(QGraphicsView):
-    def __init__(self, scene: QGraphicsScene, onGraphicsItemClickSlot_fn, parent=None):
+    def __init__(self, scene: QGraphicsScene, onGraphicsItemClickSlot_fn=None, parent=None):
         super().__init__(scene, parent)
 
         self._scene: QGraphicsScene = scene
@@ -13,7 +13,7 @@ class ZoomGraphicsView(QGraphicsView):
         self._zoomStep: float = 1.25
         self._zoomRange: float = (-20, 20)
         self.selectedItem: ImageLabelBox = None
-        self.onGraphicsItemClickSlot_fn = onGraphicsItemClickSlot_fn
+        self.onGraphicsItemClickSlot_fn = onGraphicsItemClickSlot_fn if (onGraphicsItemClickSlot_fn is not None) else self.empty_fn
 
         self._hScrollConst: float = 2.0
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -66,3 +66,6 @@ class ZoomGraphicsView(QGraphicsView):
 
     def resetZoom(self) -> None:
         self._zoom = 0
+
+    def empty_fn(self):
+        pass

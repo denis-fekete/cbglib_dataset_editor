@@ -13,7 +13,7 @@ from .LabelBox import LabelBox
 from .LabelEntry import LabelEntry
 
 class ImageSample():
-    def __init__(self, rootPath: str, name: str, imagePath: str, labelPath: str, imageExt: str, labelExt: str, labelsDict: list[int, LabelEntry],handle_fn):
+    def __init__(self, rootPath: str, name: str, imagePath: str, labelPath: str, imageExt: str, labelExt: str, labelsDict: list[int, LabelEntry], handle_fn):
         self.rootPath: str = rootPath 
         self.name: str = name
         self.imagePath: str = imagePath
@@ -114,7 +114,9 @@ class ImageSample():
 
     def save(self, exportImagePath: str = None, exportLabelPath: str = None) -> None:
         """
-        Saves current `ImageSample` labels into label file based on `rootPath` and `labelPath`.
+        Saves current `ImageSample` labels into label file based on `exportImagePath` and `exportLabelPath`. 
+        If parameters are not defined default values for from `self.imagePath` `and self.labelPath` 
+        will be used.
         """
         imagePath = exportImagePath if (exportImagePath is not None) else self.imagePath
         labelPath = exportLabelPath if (exportLabelPath is not None) else self.labelPath

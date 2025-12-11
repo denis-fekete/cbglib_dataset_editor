@@ -1,8 +1,10 @@
 from .DataLabeler import DataLabeler
 from .DatasetLoader import DatasetLoader
-from .ModelTraining import ModelTraining
+from .ModelTrainer import ModelTrainer
+from .SyntheticDataCreator import SyntheticDataCreator
 
 
 __all__ = ["DataLabeler", 
            "DatasetLoader", 
-           "ModelTraining"]
+           "ModelTrainer",
+           "SyntheticDataCreator"]
