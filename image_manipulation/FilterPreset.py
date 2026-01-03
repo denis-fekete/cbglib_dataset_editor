@@ -4,8 +4,8 @@ class FilterPreset():
         self.name = name if (name is not None) else "Default"
 
         self.saturation = 100
-        self.brightness = 0
         self.contrast = 100
+        self.brightness = 0
 
         self.hFlip = False
         self.vFlip = False

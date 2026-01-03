@@ -10,11 +10,11 @@ from utils import *
 from image_manipulation import *
 
 class SyntheticDataCreator(QtWidgets.QWidget):
-    def __init__(self, imageSampleGetter_fn: ImageSample, filterPresets : list[SyntheticImage]):
+    def __init__(self, imageSampleGetter_fn: ImageSample, filterPresets : list[FilterPreset]):
         super().__init__()  
         self.imageSampleGetter_fn = imageSampleGetter_fn
         self.imageSample : ImageSample = None
-        self.filterPresets : list[SyntheticImage] = filterPresets
+        self.filterPresets : list[FilterPreset] = filterPresets
         self.syntheticImage : SyntheticImage = SyntheticImage(self.loadSceneImage)
         self.syntheticImage.filter = self.filterPresets[0]
 
@@ -156,6 +156,7 @@ class SyntheticDataCreator(QtWidgets.QWidget):
         self._imageSettingsContainer.layout().addWidget(self.vFlipCheckbox)
 
         self.updateSettingsTexts()
+        self.updateFilterValues()
 
     def _initImagePreviewContainer(self):
         self._scene = ImageScene()
@@ -242,8 +243,6 @@ class SyntheticDataCreator(QtWidgets.QWidget):
         self.syntheticImage.filter = self.filterPresets[index.row()]
         if(self.syntheticImage.imageReference is not None):
             self.syntheticImage.applyFilter()
-            self.updateSettingsTexts()
-            print(f"Applying filter: {self.syntheticImage.filter.toString()}")
        
     def filterChanged_slot(self, topLeft, bottomRight, roles):
         """Slot called when filter was edited"""
@@ -252,7 +251,6 @@ class SyntheticDataCreator(QtWidgets.QWidget):
                 raise Exception("Shouldn't happen")
             
             name = self._filterSelector.model.index(row, 0).data()
-            print(f"labelChanged_slot(): name: {name}, row: {row}")
             self.filterPresets[row].name = name
 
         print("Filters:")

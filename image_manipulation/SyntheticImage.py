@@ -36,10 +36,13 @@ class SyntheticImage():
         if(self.cvImage is None):
             self._loadImageAndLabel(skipLabel=False)
 
-        filterName = f"bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
-        filterName += f"_sat{self.filter.saturation}_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
+        filterName = f"_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
+        filterName += f"_bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
+        filterName += f"_sat{self.filter.saturation}"
         filterName += f"_spn{self.filter.sapNoise}_gn{self.filter.gaussianNoise}"
-        fileName = self.imageReference.name + "_filters_" + filterName;
+
+        # fileName = self.imageReference.name + "_filters_" + filterName;
+        fileName = self.imageReference.name + "_filters_" + self.filter.name;
         fullImagePath = exportImagePath / (fileName + self.imageReference.imageExt)
         cv.imwrite(fullImagePath, self.cvImage)
 
@@ -54,8 +57,10 @@ class SyntheticImage():
                 x, y, w, h = labelBox.getDimensionTuple()
                 
                 if(self.filter.hFlip):
+                    print(f"Filter hFlipped, old:{x}, new:{width - x}, w:{width}")
                     x = width - x
                 if(self.filter.vFlip):
+                    print(f"Filter vFlipped, old:{y}, new:{height - y}, h:{height}")
                     y = height - y
 
                 x, y, w, h = Pixels2Norm(x, y, w, h, 
@@ -135,10 +140,13 @@ class SyntheticImage():
             img = np.clip(img, 0, 255).astype(np.uint8)
 
 
-        if(self.filter.hFlip == True):
-            img = cv.flip(img, 1)
-        if(self.filter.vFlip == True):
-            img = cv.flip(img, 0)
+        if(self.filter.hFlip and self.filter.vFlip):
+            img = cv.flip(img, -1)
+        else:
+            if(self.filter.hFlip):
+                img = cv.flip(img, 1)
+            if(self.filter.vFlip):
+                img = cv.flip(img, 0)
 
         self.cvImage = img
         

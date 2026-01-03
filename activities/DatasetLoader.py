@@ -12,13 +12,13 @@ from widgets import *
 from image_manipulation import *
 
 class DatasetLoader(QtWidgets.QWidget):
-    def __init__(self, imageSamples, labelsDict: dict[int, LabelEntry], filterPresets : list[SyntheticImage], handle_fn):
+    def __init__(self, imageSamples, labelsDict: dict[int, LabelEntry], filterPresets : list[FilterPreset], handle_fn):
         super().__init__()
 
         self.imageSamples: list[ImageSample] = imageSamples
         self.handle_fn = handle_fn
         self.labelsDict: dict[int, LabelEntry] = labelsDict
-        self.filterPresets : list[SyntheticImage] = filterPresets
+        self.filterPresets : list[FilterPreset] = filterPresets
         self.dataYamlPath: str = None
         self.incorrectLabels: bool = True
 
@@ -38,7 +38,7 @@ class DatasetLoader(QtWidgets.QWidget):
         self.importRootPath: str = None
         self.exportRootPath: str = None
         # TODO: debug only!
-        self.importRootPath = r'C:\Users\denfe\Projects\pythonDevEnv\src\data\yolo_v8'
+        self.importRootPath = r'C:\Users\denfe\Projects\pythonDevEnv\src\data\yolo_v8_reduced'
         self.exportRootPath = r'C:\Users\denfe\Projects\pythonDevEnv\src\data\exported'
         self._textImportRootPath.setText(self.importRootPath)
         self._textExportRootPath.setText(self.exportRootPath)
@@ -293,8 +293,8 @@ class DatasetLoader(QtWidgets.QWidget):
             imageSample.save(exportImagePath=trainImagesPath,
                              exportLabelPath=trainLabelPath)
             for preset in self.filterPresets:
-                sFilter.setReference(imageSample)
                 sFilter.filter = preset
+                sFilter.setReference(imageSample)
                 sFilter.save(trainImagesPath, trainLabelPath)
             
 
@@ -302,10 +302,6 @@ class DatasetLoader(QtWidgets.QWidget):
             imageSample: ImageSample = imageSample
             imageSample.save(exportImagePath=valImagesPath,
                              exportLabelPath=valLabelPath)
-            for preset in self.filterPresets:
-                sFilter.setReference(imageSample)
-                sFilter.filter = preset
-                sFilter.save(trainImagesPath, trainLabelPath)
 
     def tab_selected(self):
         self.incorrectLabels = self.datasetTreeView.loadSamplesFull(restoreVerticalPosition=True)
