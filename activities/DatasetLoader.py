@@ -1,24 +1,23 @@
-import sys
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtWidgets import QSizePolicy
+
 import os
 from pathlib import Path
-import random
-
 import yaml
-
-from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtWidgets import QSizePolicy
 
 from widgets import *
 from image_manipulation import *
+from utils import *
 
 class DatasetLoader(QtWidgets.QWidget):
-    def __init__(self, imageSamples, labelsDict: dict[int, LabelEntry], filterPresets : list[FilterPreset], handle_fn):
+    def __init__(self, imageSamples, labelsDict: dict[int, LabelEntry], filterPresets : list[FilterPreset], handle_fn, setTabsEnabled_fn):
         super().__init__()
 
         self.imageSamples: list[ImageSample] = imageSamples
         self.handle_fn = handle_fn
         self.labelsDict: dict[int, LabelEntry] = labelsDict
         self.filterPresets : list[FilterPreset] = filterPresets
+        self.setParentEnabled_fn = setTabsEnabled_fn
         self.dataYamlPath: str = None
         self.incorrectLabels: bool = True
 
@@ -30,20 +29,15 @@ class DatasetLoader(QtWidgets.QWidget):
         self._initImportContainer()
         self._initExportContainer()
         self._initDataYamlContainer()
+        self._initExportProgressContainer()
 
         self.layout().addWidget(self._importContainer, 0, 0)
         self.layout().addWidget(self._exportContainer, 1, 0)
-        self.layout().addWidget(self._dataYamlContainer, 0, 1)
+        self.layout().addWidget(self._exportProgressContainer, 2, 0)
+        self.layout().addWidget(self._dataYamlContainer, 0, 1, 3, 1)
 
         self.importRootPath: str = None
         self.exportRootPath: str = None
-        # TODO: debug only!
-        self.importRootPath = r'C:\Users\denfe\Projects\pythonDevEnv\src\data\yolo_v8_reduced'
-        self.exportRootPath = r'C:\Users\denfe\Projects\pythonDevEnv\src\data\exported'
-        self._textImportRootPath.setText(self.importRootPath)
-        self._textExportRootPath.setText(self.exportRootPath)
-        
-        self.loadImageSamples()
 
     def _initImportContainer(self):
         self._importContainer = QtWidgets.QWidget()
@@ -75,10 +69,23 @@ class DatasetLoader(QtWidgets.QWidget):
         self._btnExport = QtWidgets.QPushButton("Start Export")
         self._btnExport.clicked.connect(self.btnExport_slot)
 
+
         self._exportContainer.layout().addWidget(labelExportRootPath, 0, 0, 1, 2)
         self._exportContainer.layout().addWidget(self._textExportRootPath, 1, 0)
         self._exportContainer.layout().addWidget(self._btnExportDialog, 1, 1)
-        self._exportContainer.layout().addWidget(self._btnExport, 2, 0,)
+        self._exportContainer.layout().addWidget(self._btnExport, 2, 0)
+
+    def _initExportProgressContainer(self):
+        self._exportProgressContainer = QtWidgets.QWidget()
+        self._exportProgressContainer.setLayout(QtWidgets.QGridLayout())
+
+        self._exportProgressBar = QtWidgets.QProgressBar()
+        self._exportProgressBar.setMaximum(100)
+        self._exportProgressBar.setMinimum(0)
+
+        self._exportProgressContainer.layout().addWidget(QtWidgets.QLabel("Export progress:"), 3, 0)
+        self._exportProgressContainer.layout().addWidget(self._exportProgressBar, 4, 0, 1, 2)
+        self._exportProgressContainer.setEnabled(False)
 
     def _initDataYamlContainer(self):
         self._dataYamlContainer = QtWidgets.QWidget()
@@ -142,7 +149,7 @@ class DatasetLoader(QtWidgets.QWidget):
         else:
             os.makedirs(self.exportRootPath)
         
-        self.saveImageSamples()
+        self.saveImageSamplesStart()
 
     def loadImageSamples(self):
         """Clears `imageSamples` and loads new from `importRootPath`"""
@@ -241,67 +248,38 @@ class DatasetLoader(QtWidgets.QWidget):
 
         return fileDict
 
-    def saveImageSamples(self):
+    def saveImageSamplesStart(self):
         """Saves images to the `exportRootPath`"""
-        rootPath = Path(self.exportRootPath)
-        imagesPath = rootPath / "images"
-        trainImagesPath = imagesPath / "train"
-        valImagesPath = imagesPath / "val"
+        self.thread = QtCore.QThread()
+        self.worker = ExportWorker(self.imageSamples, self.filterPresets, self.labelsDict, self.exportRootPath)
+        self.worker.moveToThread(self.thread)
 
-        labelsPath = rootPath / "labels"
-        trainLabelPath = labelsPath / "train"
-        valLabelPath = labelsPath / "val"
+        self.thread.started.connect(self.worker.run)
+        self.worker.progress.connect(self.saveImageSamplesUpdate)
+        self.worker.finished.connect(self.saveImageSamplesDone)
 
-        os.makedirs(imagesPath, exist_ok=True)
-        os.makedirs(trainImagesPath, exist_ok=True)
-        os.makedirs(valImagesPath, exist_ok=True)
-        os.makedirs(labelsPath, exist_ok=True)
-        os.makedirs(trainLabelPath, exist_ok=True)
-        os.makedirs(valLabelPath, exist_ok=True)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
 
-        namesDict = {}
-        for label in self.labelsDict.values():
-            namesDict[label.index] = label.name
+        self._exportProgressContainer.setEnabled(True)
+        self._exportContainer.setEnabled(False)
+        self._importContainer.setEnabled(False)
+        self._dataYamlContainer.setEnabled(False)
+        self.setParentEnabled_fn(False)
 
-        dataYaml = {
-            "filePath": rootPath.name,
-            "train": "images/train",
-            "val": "images/val",
-            # "test": "# not used",
-            "names" : namesDict
-        }
+        self.thread.start()
 
-        with open(rootPath / "data.yaml", "w", encoding="utf-8") as f:
-            yaml.safe_dump(dataYaml, f, sort_keys=False)
+    def saveImageSamplesUpdate(self, progress):
+        self._exportProgressBar.setValue(progress)
 
-        trainImageSamples = []
-        valImageSamples = []
-        VALIDATION_THRESHOLD_PERCENT = 30
-        VALIDATION_THRESHOLD_MAX = 20
+    def saveImageSamplesDone(self):
+        self._exportProgressContainer.setEnabled(False)
+        self._exportContainer.setEnabled(True)
+        self._importContainer.setEnabled(True)
+        self._dataYamlContainer.setEnabled(True)
+        self.setParentEnabled_fn(True)
 
-        for imageSample in self.imageSamples:
-            
-            if(random.randint(0, 100) < VALIDATION_THRESHOLD_PERCENT and 
-               len(valImageSamples) <= VALIDATION_THRESHOLD_MAX):
-                valImageSamples.append(imageSample)
-            else:
-                trainImageSamples.append(imageSample)
-
-        sFilter = SyntheticImage()
-        for imageSample in trainImageSamples:
-            imageSample: ImageSample = imageSample
-            imageSample.save(exportImagePath=trainImagesPath,
-                             exportLabelPath=trainLabelPath)
-            for preset in self.filterPresets:
-                sFilter.filter = preset
-                sFilter.setReference(imageSample)
-                sFilter.save(trainImagesPath, trainLabelPath)
-            
-
-        for imageSample in valImageSamples:
-            imageSample: ImageSample = imageSample
-            imageSample.save(exportImagePath=valImagesPath,
-                             exportLabelPath=valLabelPath)
 
     def tab_selected(self):
         self.incorrectLabels = self.datasetTreeView.loadSamplesFull(restoreVerticalPosition=True)

@@ -44,7 +44,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def _initUI(self):
         self.mainUI = QtWidgets.QTabWidget()
         self.dataLabelerWidget = DataLabeler(self.imageSamples, self.labelsDict, self._screen) 
-        self.datasetWidget = DatasetLoader(self.imageSamples, self.labelsDict, self.filterPresets, self.dataLabelerWidget._handleScaleByView) 
+        self.datasetWidget = DatasetLoader(self.imageSamples, self.labelsDict, self.filterPresets, self.dataLabelerWidget._handleScaleByView, self.setTabsEnabled) 
         self.syntheticDataCreatorWidget = SyntheticDataCreator(self.dataLabelerWidget.getCurrentImageSample, self.filterPresets)
         self.modelTrainerWidget = ModelTrainer()
 
@@ -69,7 +69,11 @@ class MyWindow(QtWidgets.QMainWindow):
         if (hasattr(tab, "tab_selected")):
             tab.tab_selected()
 
-
+    def setTabsEnabled(self, value: bool):
+        for i in range(0, self.mainUI.count()):
+            if(i == self.mainUI.currentIndex()):
+                continue
+            self.mainUI.setTabEnabled(i, value)
 
 ##############################################################################
 

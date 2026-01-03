@@ -57,10 +57,8 @@ class SyntheticImage():
                 x, y, w, h = labelBox.getDimensionTuple()
                 
                 if(self.filter.hFlip):
-                    print(f"Filter hFlipped, old:{x}, new:{width - x}, w:{width}")
                     x = width - x
                 if(self.filter.vFlip):
-                    print(f"Filter vFlipped, old:{y}, new:{height - y}, h:{height}")
                     y = height - y
 
                 x, y, w, h = Pixels2Norm(x, y, w, h, 
@@ -101,6 +99,9 @@ class SyntheticImage():
         return self.imageReference.height
     
     def applyFilter(self):
+        if(self.imageReference is None):
+            return
+        
         original = self.imageReference.getCvImage()
 
         # apply contrast and brightness
