@@ -8,19 +8,17 @@ import yaml
 from widgets import *
 from image_manipulation import *
 from utils import *
+from data_classes import SharedValues
 
 class DatasetLoader(QtWidgets.QWidget):
-    def __init__(self, imageSamples, labelsDict: dict[int, LabelEntry], filterPresets : list[FilterPreset], handle_fn, setTabsEnabled_fn):
+    def __init__(self, handle_fn, setTabsEnabled_fn):
         super().__init__()
 
-        self.imageSamples: list[ImageSample] = imageSamples
         self.handle_fn = handle_fn
-        self.labelsDict: dict[int, LabelEntry] = labelsDict
-        self.filterPresets : list[FilterPreset] = filterPresets
         self.setParentEnabled_fn = setTabsEnabled_fn
         self.dataYamlPath: str = None
         self.incorrectLabels: bool = True
-
+        
         self._initUI()
 
     def _initUI(self):
@@ -36,32 +34,38 @@ class DatasetLoader(QtWidgets.QWidget):
         self.layout().addWidget(self._exportProgressContainer, 2, 0)
         self.layout().addWidget(self._dataYamlContainer, 0, 1, 3, 1)
 
-        self.importRootPath: str = None
-        self.exportRootPath: str = None
+        self._importPathTextEdit.setText(r"C:\Users\denfe\Projects\pythonDevEnv\src\data\yolo_v8_reduced")
+        self._exportPathTextEdit.setText(r"C:\Users\denfe\Projects\pythonDevEnv\src\data\exported")
+        self.loadImageSamples()
 
     def _initImportContainer(self):
         self._importContainer = QtWidgets.QWidget()
         self._importContainer.setLayout(QtWidgets.QGridLayout())
-        labelImportRootPath = QtWidgets.QLabel("Path to import dataset from (subdirectories will be imported as well)")
-        labelImportRootPath.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        self._textImportRootPath = QtWidgets.QLineEdit()
+        importPathLabel = QtWidgets.QLabel("Path to import dataset from (subdirectories will be imported as well)")
+        importPathLabel.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+
+        self._importPathTextEdit = QtWidgets.QLineEdit()
+        self._importPathTextEdit.textChanged.connect(self._importPathTextEdit_changed)
+
 
         self._btnImportDialog = QtWidgets.QPushButton("Import")
         self._btnImportDialog.clicked.connect(self.btnImport_slot)
 
-        self.datasetTreeView = ImageSampleTreeView(self.imageSamples)
+        self.datasetTreeView = ImageSampleTreeView(SharedValues().imageSamples)
 
-        self._importContainer.layout().addWidget(labelImportRootPath, 0, 0, 1, 2)
-        self._importContainer.layout().addWidget(self._textImportRootPath, 1, 0)
+        self._importContainer.layout().addWidget(importPathLabel, 0, 0, 1, 2)
+        self._importContainer.layout().addWidget(self._importPathTextEdit, 1, 0)
         self._importContainer.layout().addWidget(self._btnImportDialog, 1, 1)
         self._importContainer.layout().addWidget(self.datasetTreeView, 2, 0, 1, 2)
 
     def _initExportContainer(self):
         self._exportContainer = QtWidgets.QWidget()
         self._exportContainer.setLayout(QtWidgets.QGridLayout())
-        labelExportRootPath = QtWidgets.QLabel("Path to export dataset to")
-        labelExportRootPath.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        self._textExportRootPath = QtWidgets.QLineEdit()
+        exportPathLabel = QtWidgets.QLabel("Path to export dataset to")
+        exportPathLabel.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+
+        self._exportPathTextEdit = QtWidgets.QLineEdit()
+        self._exportPathTextEdit.textChanged.connect(self._exportPathTextEdit_changed)
 
         self._btnExportDialog = QtWidgets.QPushButton("Open")
         self._btnExportDialog.clicked.connect(self.btnExportDialog_slot)
@@ -69,9 +73,8 @@ class DatasetLoader(QtWidgets.QWidget):
         self._btnExport = QtWidgets.QPushButton("Start Export")
         self._btnExport.clicked.connect(self.btnExport_slot)
 
-
-        self._exportContainer.layout().addWidget(labelExportRootPath, 0, 0, 1, 2)
-        self._exportContainer.layout().addWidget(self._textExportRootPath, 1, 0)
+        self._exportContainer.layout().addWidget(exportPathLabel, 0, 0, 1, 2)
+        self._exportContainer.layout().addWidget(self._exportPathTextEdit, 1, 0)
         self._exportContainer.layout().addWidget(self._btnExportDialog, 1, 1)
         self._exportContainer.layout().addWidget(self._btnExport, 2, 0)
 
@@ -113,49 +116,51 @@ class DatasetLoader(QtWidgets.QWidget):
         self._dataYamlContainer.layout().addWidget(QtWidgets.QLabel("test:"), 5, 0)
         self._dataYamlContainer.layout().addWidget(self._dataYamlTestLineEdit, 5, 1)
 
-        self.labelSelectorTreeView = LabelSelectorTreeView(self.labelsDict)
+        self.labelSelectorTreeView = LabelSelectorTreeView(SharedValues().labelsDict)
         self._dataYamlContainer.layout().addWidget(QtWidgets.QLabel("names:"), 6, 0)
 
         self._dataYamlContainer.layout().addWidget(self.labelSelectorTreeView, 7, 0, 1, 2)
 
     def btnImport_slot(self):
         """Open OS dialog window to choose a directory from which a dataset will be imported"""
-        self.importRootPath = QtWidgets.QFileDialog().getExistingDirectory(
+        textPath = QtWidgets.QFileDialog().getExistingDirectory(
             self,
             "Select a Folder",
             "",
             QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
 
-        self.imageSamples.clear()
+        self._importPathTextEdit.setText(textPath)
         self.dataYamlPath: str = None
         
         self.loadImageSamples()
 
     def btnExportDialog_slot(self):
         """Opens OS dialog window to choose a directory to which a dataset will be exported"""
-        self.exportRootPath = QtWidgets.QFileDialog().getExistingDirectory(
+        textPath = QtWidgets.QFileDialog().getExistingDirectory(
             self,
             "Select a Folder",
             "",
             QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
+        self._exportPathTextEdit.setText(textPath)
 
     def btnExport_slot(self):
         """Starts export process"""
-        if(os.path.exists(self.exportRootPath)):
-            if(not os.path.isdir(self.exportRootPath)):
+        if(os.path.exists(SharedValues().datasetExportPath)):
+            if(not os.path.isdir(SharedValues().datasetExportPath)):
                 raise Exception("Error: Export root path exists and it is not directory")
         else:
-            os.makedirs(self.exportRootPath)
+            os.makedirs(SharedValues().datasetExportPath)
         
         self.saveImageSamplesStart()
 
     def loadImageSamples(self):
-        """Clears `imageSamples` and loads new from `importRootPath`"""
-        self.imageSamples.clear()
+        """Clears `imageSamples` and loads new from `SharedValues().datasetImportPath`"""
+        SharedValues().imageSamples.clear()
         
         fileDict = self.loadFilesDictionary()
+
         for item in fileDict:
             if(item["ext"] == ".jpg"):
                 labels = []
@@ -170,20 +175,20 @@ class DatasetLoader(QtWidgets.QWidget):
                 labelPath = label["filePath"] if (label is not None) else None
                 labelExt = label["ext"] if (label is not None) else None
 
-                self.imageSamples.append(ImageSample(
-                    rootPath = self.importRootPath, 
+                SharedValues().imageSamples.append(ImageSample(
+                    rootPath = SharedValues().datasetImportPath, 
                     name = item["name"], 
                     imagePath = item["filePath"], 
                     imageExt = item["ext"],
                     labelPath = labelPath,
                     labelExt = labelExt,
-                    labelsDict = self.labelsDict, 
+                    labelsDict = SharedValues().labelsDict, 
                     handle_fn = self.handle_fn))
                 
                     
             elif(item["ext"] == ".yaml" and item["name"] == "data"):
                 if(self.dataYamlPath is None):
-                    self.dataYamlPath = Path(self.importRootPath) / item["filePath"] / (item["name"] + item["ext"])
+                    self.dataYamlPath = Path(SharedValues().datasetImportPath) / item["filePath"] / (item["name"] + item["ext"])
                 else:
                     raise Exception("Error: Found multiple data.yaml files. Only one or none (will get created automatically) should be in dataset!")
                 
@@ -192,7 +197,7 @@ class DatasetLoader(QtWidgets.QWidget):
 
     def loadDataYaml(self):
         """Loads dataset info such as label names and indexes from data.yaml """
-        path = Path(self.importRootPath)
+        path = Path(SharedValues().datasetImportPath)
         self._dataYamlPathLineEdit.setText(path.name)
         self._dataYamlValLineEdit.setText("images/val")
         self._dataYamlTrainLineEdit.setText("images/train")
@@ -205,7 +210,7 @@ class DatasetLoader(QtWidgets.QWidget):
             data = yaml.safe_load(f)
 
         for index, name in data["names"].items():
-            self.labelsDict[index] = LabelEntry(name, index, None)
+            SharedValues().labelsDict[index] = LabelEntry(name, index, None)
 
         self.labelSelectorTreeView.loadLabels()
 
@@ -235,11 +240,11 @@ class DatasetLoader(QtWidgets.QWidget):
     
     def loadFilesDictionary(self):
         """Returns list of dictionaries containing name, path and extension"""
-        rawFiles = self.loadFilesRaw(self.importRootPath)
+        rawFiles = self.loadFilesRaw(SharedValues().datasetImportPath)
 
         fileDict = []
         for file in rawFiles:
-            fullPath: Path = Path(self.importRootPath) / file
+            fullPath: Path = Path(SharedValues().datasetImportPath) / file
             filePath = str(Path(file).parent)
             fileName = fullPath.stem
             ext = fullPath.suffix
@@ -251,7 +256,7 @@ class DatasetLoader(QtWidgets.QWidget):
     def saveImageSamplesStart(self):
         """Saves images to the `exportRootPath`"""
         self.thread = QtCore.QThread()
-        self.worker = ExportWorker(self.imageSamples, self.filterPresets, self.labelsDict, self.exportRootPath)
+        self.worker = ExportWorker(SharedValues().imageSamples, SharedValues().filterPresets, SharedValues().labelsDict, SharedValues().datasetExportPath)
         self.worker.moveToThread(self.thread)
 
         self.thread.started.connect(self.worker.run)
@@ -279,6 +284,12 @@ class DatasetLoader(QtWidgets.QWidget):
         self._importContainer.setEnabled(True)
         self._dataYamlContainer.setEnabled(True)
         self.setParentEnabled_fn(True)
+
+    def _exportPathTextEdit_changed(self, text):
+        SharedValues().datasetExportPath = text
+    
+    def _importPathTextEdit_changed(self, text):
+        SharedValues().datasetImportPath = text
 
 
     def tab_selected(self):

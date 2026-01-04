@@ -7,17 +7,14 @@ from PySide6.QtGui import QBrush, QPixmap, QScreen, QShortcut, QKeySequence, QCu
 from widgets import *
 from utils import *
 from image_manipulation import *
+from data_classes import SharedValues
 
 class DataLabeler(QtWidgets.QWidget):
-    def __init__(self, imageSamples: list[ImageLabelBox], labelsDict: dict[int, LabelEntry], screen: QScreen):
+    def __init__(self):
         super().__init__()        
 
         self.currentImageSample: ImageSample = None
-        self.imageSamples: list[ImageSample] = imageSamples
-        self.labelsDict: dict[LabelEntry] = labelsDict
-
-        self._screen: QScreen = screen
-
+        
         self._initUI()
         self.initShortcuts()
 
@@ -85,7 +82,7 @@ class DataLabeler(QtWidgets.QWidget):
         self._labelSelectorContainer = QtWidgets.QWidget()
         self._labelSelectorContainer.setLayout(QtWidgets.QGridLayout())
 
-        self._labelSelector = LabelSelectorTreeView(self.labelsDict)
+        self._labelSelector = LabelSelectorTreeView(SharedValues().labelsDict)
         self._labelSelector.clicked.connect(self.labelSelected_slot)
         self._labelSelector.model.dataChanged.connect(self.labelChanged_slot)
 
@@ -104,7 +101,7 @@ class DataLabeler(QtWidgets.QWidget):
         self._imageSampleSelectorContainer = QtWidgets.QWidget()
         self._imageSampleSelectorContainer.setLayout(QtWidgets.QGridLayout())
 
-        self._imageSampleTreeView = ImageSampleTreeView(self.imageSamples)
+        self._imageSampleTreeView = ImageSampleTreeView(SharedValues().imageSamples)
         self._imageSampleTreeView.loadSamples()
         self._imageSampleTreeView.selectionModel().currentChanged.connect(self.imageSampleChanged_slot)
 
@@ -167,7 +164,7 @@ class DataLabeler(QtWidgets.QWidget):
             print("Error: clickedItemName was not found in datasetItemSelected_slot()")
             return 
         
-        newCurrentImageSample = next(filter(lambda item: item.name == clickedItemName, self.imageSamples), None)
+        newCurrentImageSample = next(filter(lambda item: item.name == clickedItemName, SharedValues().imageSamples), None)
 
         if(self.currentImageSample == newCurrentImageSample):
             return
@@ -214,7 +211,7 @@ class DataLabeler(QtWidgets.QWidget):
                 model = index.model()
                 row = index.row()
                 value = int(model.index(row, 0).data())
-                labelEntry: LabelEntry = self.labelsDict[value]
+                labelEntry: LabelEntry = SharedValues().labelsDict[value]
                 selectedLabelBox.setLabel(labelEntry.index, labelEntry.name)
             
             # reset warning on image samples tree view
@@ -232,8 +229,8 @@ class DataLabeler(QtWidgets.QWidget):
             name = self._labelSelector.model.index(row, 1).data()
             # shortcut = self._labelSelector.model.index(row, 2).data()
         
-            self.labelsDict[row] = LabelEntry(name, row, None)
-            # self.labelsDict[row] = LabelEntry(name, row, shortcut) # TODO: add shortcut support
+            SharedValues().labelsDict[row] = LabelEntry(name, row, None)
+            # SharedValues().labelsDict[row] = LabelEntry(name, row, shortcut) # TODO: add shortcut support
 
             self.currentImageSample.reloadImageLabels()
 
@@ -248,7 +245,7 @@ class DataLabeler(QtWidgets.QWidget):
         
         if(self._labelSelector.currentIndex is not None): 
             defaultLabelIndex = self._labelSelector.currentIndex
-            defaultLabelName = self.labelsDict[defaultLabelIndex].name
+            defaultLabelName = SharedValues().labelsDict[defaultLabelIndex].name
 
         globalPosition = self._view.mapFromGlobal(QCursor.pos())
         scenePosition = self._view.mapToScene(globalPosition)
@@ -275,29 +272,29 @@ class DataLabeler(QtWidgets.QWidget):
 
     def newLabel_slot(self):
         """Creates new `LabelEntry` into global dictionary of labels"""
-        index = len(self.labelsDict)
-        self.labelsDict[index] = LabelEntry("new", index, None)
+        index = len(SharedValues().labelsDict)
+        SharedValues().labelsDict[index] = LabelEntry("new", index, None)
         self._labelSelector.loadLabels()
 
     def deleteLabel_slot(self):
         """Deletes label from global list of labels, all keys will be moved down"""
         # TODO: Add warning!
         index = self._labelSelector.currentIndex
-        self.labelsDict.pop(index)
+        SharedValues().labelsDict.pop(index)
 
-        keys = list(self.labelsDict.keys()) 
+        keys = list(SharedValues().labelsDict.keys()) 
         
         maxKey = 0
         for key in keys:
             if(key > index):
-                oldValues: LabelEntry = self.labelsDict[key]
-                self.labelsDict[key-1] = LabelEntry(oldValues.name, oldValues.index, oldValues.shortcut)
+                oldValues: LabelEntry = SharedValues().labelsDict[key]
+                SharedValues().labelsDict[key-1] = LabelEntry(oldValues.name, oldValues.index, oldValues.shortcut)
                 maxKey = max(key, maxKey)
         
-        if(len(self.labelsDict) > 0):
-            self.labelsDict.pop(maxKey)
+        if(len(SharedValues().labelsDict) > 0):
+            SharedValues().labelsDict.pop(maxKey)
 
-        for imageSample in self.imageSamples:
+        for imageSample in SharedValues().imageSamples:
             for labelBox in imageSample._labelBoxes:
                 if(labelBox.label == index):
                     labelBox.label = -1
@@ -334,8 +331,8 @@ class DataLabeler(QtWidgets.QWidget):
 
     def _handleScaleByView(self):
         """Returns maximum width or height of windows. Used for scaling different UI elements"""
-        return max( self._screen.geometry().width() * 0.03,
-                    self._screen.geometry().height() * 0.03)
+        return max( SharedValues().screen.geometry().width() * 0.03,
+                    SharedValues().screen.geometry().height() * 0.03)
         
     def onGraphicsItemClickSlot(self):
         # reset warning on image samples tree view

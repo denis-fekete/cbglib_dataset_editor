@@ -7,6 +7,7 @@ from widgets import *
 from utils import *
 from activities import *
 from image_manipulation import *
+from data_classes import *
 
 ##############################################################################
 
@@ -14,12 +15,9 @@ class MyWindow(QtWidgets.QMainWindow):
     def __init__(self, qtApp):
         super().__init__()
         self.qtApp = qtApp
-        self._screen: QScreen = self.qtApp.primaryScreen()
 
-        self.imageSamples = []
-        self.labelsDict: dict[int, LabelEntry] = {}
-        self.filterPresets : list[FilterPreset] = getDefaultFilterPresets()
-        
+        SharedValues().screen = self.qtApp.primaryScreen()
+        SharedValues().filterPresets = getDefaultFilterPresets()
         self.lastIndex = None
 
         self.initWindow()
@@ -27,7 +25,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         
     def initWindow(self):
-        screenWidth, screenHeight = self._screen.geometry().width(), self._screen.geometry().height()
+        screenWidth, screenHeight = SharedValues().screen.geometry().width(), SharedValues().screen.geometry().height()
         windowWidth, windowHeight = screenWidth/2, screenHeight/2
 
         if(windowWidth < 640 or windowHeight < 480):
@@ -43,10 +41,10 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def _initUI(self):
         self.mainUI = QtWidgets.QTabWidget()
-        self.dataLabelerWidget = DataLabeler(self.imageSamples, self.labelsDict, self._screen) 
-        self.datasetWidget = DatasetLoader(self.imageSamples, self.labelsDict, self.filterPresets, self.dataLabelerWidget._handleScaleByView, self.setTabsEnabled) 
-        self.syntheticDataCreatorWidget = SyntheticDataCreator(self.dataLabelerWidget.getCurrentImageSample, self.filterPresets)
-        self.modelTrainerWidget = ModelTrainer()
+        self.dataLabelerWidget = DataLabeler() 
+        self.datasetWidget = DatasetLoader(self.dataLabelerWidget._handleScaleByView, self.setTabsEnabled) 
+        self.syntheticDataCreatorWidget = SyntheticDataCreator(self.dataLabelerWidget.getCurrentImageSample)
+        self.modelTrainerWidget = ModelTrainer(self.setTabsEnabled)
 
         self.mainUI.addTab(self.datasetWidget, "Dataset")
         self.mainUI.addTab(self.dataLabelerWidget, "Image labeling")
@@ -74,6 +72,10 @@ class MyWindow(QtWidgets.QMainWindow):
             if(i == self.mainUI.currentIndex()):
                 continue
             self.mainUI.setTabEnabled(i, value)
+
+    def closeEvent(self, event):
+        self.modelTrainerWidget.destroyTrainers()
+        return super().closeEvent(event)
 
 ##############################################################################
 

@@ -8,15 +8,15 @@ from pathlib import Path
 from widgets import *
 from utils import *
 from image_manipulation import *
+from data_classes import SharedValues
 
 class SyntheticDataCreator(QtWidgets.QWidget):
-    def __init__(self, imageSampleGetter_fn: ImageSample, filterPresets : list[FilterPreset]):
+    def __init__(self, imageSampleGetter_fn):
         super().__init__()  
         self.imageSampleGetter_fn = imageSampleGetter_fn
         self.imageSample : ImageSample = None
-        self.filterPresets : list[FilterPreset] = filterPresets
         self.syntheticImage : SyntheticImage = SyntheticImage(self.loadSceneImage)
-        self.syntheticImage.filter = self.filterPresets[0]
+        self.syntheticImage.filter = SharedValues().filterPresets[0]
 
         self._initUI()
 
@@ -55,7 +55,7 @@ class SyntheticDataCreator(QtWidgets.QWidget):
         self._presetSelectorContainer.setMaximumWidth(300)
         self._presetSelectorContainer.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
-        self._filterSelector = FilterPresetTreeView(self.filterPresets)
+        self._filterSelector = FilterPresetTreeView(SharedValues().filterPresets)
         self._filterSelector.clicked.connect(self.filterSelected_slot)
         self._filterSelector.model.dataChanged.connect(self.filterChanged_slot)
 
@@ -219,20 +219,20 @@ class SyntheticDataCreator(QtWidgets.QWidget):
         self.gaussianNoiseSlider.setValue( self.syntheticImage.filter.gaussianNoise)
 
     def saveSyntheticImage_slot(self):
-        for sFilter in self.filterPresets:
+        for sFilter in SharedValues().filterPresets:
             sFilter.setReference(self.imageSampleGetter_fn())
             sFilter.save(Path(os.getcwd()), Path(os.getcwd()))
 
     def newFilter_slot(self):
         """Creates new `FilterPreset` into global dictionary of filters"""
-        index = len(self.filterPresets)
-        self.filterPresets.append(FilterPreset())
+        index = len(SharedValues().filterPresets)
+        SharedValues().filterPresets.append(FilterPreset())
         self._filterSelector.loadLabels()
 
     def deleteFilter_slot(self):
         """Deletes filter from global list of filters, all keys will be moved down"""
         index = self._filterSelector.currentIndex
-        self.filterPresets.pop(index)
+        SharedValues().filterPresets.pop(index)
         self._filterSelector.loadLabels()
 
     def filterSelected_slot(self, index: QModelIndex):
@@ -240,7 +240,7 @@ class SyntheticDataCreator(QtWidgets.QWidget):
         self._filterSelector.selectLabel(index)
         
         print(f"Selected :{index.row()}")
-        self.syntheticImage.filter = self.filterPresets[index.row()]
+        self.syntheticImage.filter = SharedValues().filterPresets[index.row()]
         if(self.syntheticImage.imageReference is not None):
             self.syntheticImage.applyFilter()
        
@@ -251,10 +251,10 @@ class SyntheticDataCreator(QtWidgets.QWidget):
                 raise Exception("Shouldn't happen")
             
             name = self._filterSelector.model.index(row, 0).data()
-            self.filterPresets[row].name = name
+            SharedValues().filterPresets[row].name = name
 
         print("Filters:")
-        for sFilter in self.filterPresets:
+        for sFilter in SharedValues().filterPresets:
             print(f"\t{sFilter.name}")
 
     def tab_closed(self):

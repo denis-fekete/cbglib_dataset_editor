@@ -8,7 +8,7 @@ from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPixmap, QColor
 
 from widgets import *
-from utils import *
+from utils import Norm2Pixels, Pixels2Norm, Mat2QImage
 from .LabelBox import LabelBox
 from .LabelEntry import LabelEntry
 
@@ -36,10 +36,9 @@ class ImageSample():
         stored in internal list of `LabelBoxes` `_labelBoxes`. Checks for existence of both files. 
         If image does not exist an exception is raised. For non existing label file no exception is raised.
         """
-
         imgPath = Path(self.rootPath) / self.imagePath / (self.name + self.imageExt)
         if(imgPath.is_file()):
-            self.cvImage = cv.imread(imgPath)
+            self.cvImage = cv.imread(imgPath.resolve()._str)
             self.height , self.width = self.cvImage.shape[:2]
         else:
             raise Exception(f"Error: Image file does not exist: {imgPath}")
@@ -129,8 +128,8 @@ class ImageSample():
         if(self.cvImage is None):
             self._loadImageAndLabel(skipLabel=False)
 
-        fullImagePath = imagePath / (self.name + self.imageExt)
-        cv.imwrite(fullImagePath, self.cvImage)
+        fullImagePath = Path(imagePath) / (self.name + self.imageExt)
+        cv.imwrite(fullImagePath.resolve()._str, self.cvImage)
 
         labelExt = self.labelExt if (self.labelExt is not None) else ".txt"
         fullLabelPath = labelPath / (self.name + labelExt)
