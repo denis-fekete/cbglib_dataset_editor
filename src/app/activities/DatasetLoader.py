@@ -87,10 +87,14 @@ class DatasetLoader(AbstractTabWidget):
         self._btnExport = QtWidgets.QPushButton("Start Export")
         self._btnExport.clicked.connect(self.btnExport_slot)
 
+        self._applyFiltersCheckBox = QtWidgets.QCheckBox("Apply filters")
+        self._applyFiltersCheckBox.setChecked(True)
+
         self._exportContainer.layout().addWidget(exportPathLabel, 0, 0, 1, 2)
         self._exportContainer.layout().addWidget(self._exportPathTextEdit, 1, 0)
         self._exportContainer.layout().addWidget(self._btnExportDialog, 1, 1)
         self._exportContainer.layout().addWidget(self._btnExport, 2, 0)
+        self._exportContainer.layout().addWidget(self._applyFiltersCheckBox, 2, 1)
 
     def _initExportProgressContainer(self) -> None:
         self._exportProgressContainer = QtWidgets.QWidget()
@@ -141,6 +145,7 @@ class DatasetLoader(AbstractTabWidget):
             self.labelSelectorTreeView, 7, 0, 1, 2
         )
 
+    @Slot()
     def btnImport_slot(self) -> None:
         """Open OS dialog window to choose a directory from which a dataset will be imported"""
         textPath = QtWidgets.QFileDialog().getExistingDirectory(
@@ -160,6 +165,7 @@ class DatasetLoader(AbstractTabWidget):
         )
         self._exportPathTextEdit.setText(textPath)
 
+    @Slot()
     def btnExport_slot(self) -> None:
         """Qt slot for starting export"""
         exportPath = Path(SharedValues().datasetExportPath)
@@ -236,16 +242,17 @@ class DatasetLoader(AbstractTabWidget):
             return
 
         self.worker = ExportWorker(
-            SharedValues().imageSamples,
-            SharedValues().filterPresets,
-            SharedValues().labelsDict,
-            SharedValues().datasetExportPath,
+            imageSamples=SharedValues().imageSamples,
+            filterPresets=SharedValues().filterPresets,
+            labelsDict=SharedValues().labelsDict,
+            exportRootPath=SharedValues().datasetExportPath,
+            applyFilters=self._applyFiltersCheckBox.isChecked(),
         )
         self.worker.moveToThread(self.workerThread)
 
         self.workerThread.started.connect(self.worker.run)
-        self.worker.progress.connect(self.saveImageSamplesUpdate)
-        self.worker.finished.connect(self.saveImageSamplesDone)
+        self.worker.progress.connect(self.saveImageSamplesUpdate_slot)
+        self.worker.finished.connect(self.saveImageSamplesDone_slot)
 
         self.worker.finished.connect(self.workerThread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
@@ -259,10 +266,12 @@ class DatasetLoader(AbstractTabWidget):
 
         self.workerThread.start()
 
-    def saveImageSamplesUpdate(self, progress: int) -> None:
+    @Slot(int)
+    def saveImageSamplesUpdate_slot(self, progress: int) -> None:
         self._exportProgressBar.setValue(progress)
 
-    def saveImageSamplesDone(self) -> None:
+    @Slot()
+    def saveImageSamplesDone_slot(self) -> None:
         self._exportProgressContainer.setEnabled(False)
         self._exportContainer.setEnabled(True)
         self._importContainer.setEnabled(True)

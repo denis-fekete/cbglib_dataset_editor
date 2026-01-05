@@ -21,12 +21,14 @@ class ExportWorker(QObject):
         filterPresets: list[FilterPreset],
         labelsDict: dict[int, LabelEntry],
         exportRootPath: str,
+        applyFilters: bool,
     ) -> None:
         super().__init__()
         self.imageSamples = imageSamples
         self.filterPresets = filterPresets
         self.exportRootPath = exportRootPath
         self.labelsDict = labelsDict
+        self.applyFilters = applyFilters
 
     progress = Signal(int)
     finished = Signal()
@@ -64,25 +66,28 @@ class ExportWorker(QObject):
         with open(rootPath / "data.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(dataYaml, f, sort_keys=False)
 
-        trainImageSamples: list[ImageSample] = []
-        valImageSamples: list[ImageSample] = []
+        trainImages: list[ImageSample] = []
+        valImages: list[ImageSample] = []
 
         for imageSample in self.imageSamples:
             if (
                 random.randint(0, 100) < self.VALIDATION_THRESHOLD_PERCENT
-                and len(valImageSamples) <= self.VALIDATION_THRESHOLD_MAX
+                and len(valImages) <= self.VALIDATION_THRESHOLD_MAX
             ):
-                valImageSamples.append(imageSample)
+                valImages.append(imageSample)
             else:
-                trainImageSamples.append(imageSample)
+                trainImages.append(imageSample)
 
         progressCnt = 0
-        progressStep = 100 / (
-            len(trainImageSamples) * len(self.filterPresets) + len(valImageSamples)
-        )
+        if self.applyFilters:
+            progressStep = 100 / (
+                len(trainImages) * len(self.filterPresets) + len(valImages)
+            )
+        else:
+            progressStep = 100 / (len(trainImages) + len(valImages))
 
         sFilter = SyntheticImage()
-        for imageSample in trainImageSamples:
+        for imageSample in trainImages:
             imageSample: ImageSample = imageSample
             imageSample.save(
                 exportImagePath=trainImagesPath.resolve()._str,
@@ -92,17 +97,18 @@ class ExportWorker(QObject):
             progressCnt = progressCnt + progressStep
             self.progress.emit(progressCnt)
 
-            for preset in self.filterPresets:
-                sFilter.filter = preset
-                sFilter.setReference(imageSample)
-                sFilter.save(
-                    trainImagesPath.resolve()._str, trainLabelPath.resolve()._str
-                )
+            if self.applyFilters:
+                for preset in self.filterPresets:
+                    sFilter.filter = preset
+                    sFilter.setReference(imageSample)
+                    sFilter.save(
+                        trainImagesPath.resolve()._str, trainLabelPath.resolve()._str
+                    )
 
-                progressCnt = progressCnt + progressStep
-                self.progress.emit(progressCnt)
+                    progressCnt = progressCnt + progressStep
+                    self.progress.emit(progressCnt)
 
-        for imageSample in valImageSamples:
+        for imageSample in valImages:
             imageSample: ImageSample = imageSample
             imageSample.save(
                 exportImagePath=valImagesPath.resolve()._str,
