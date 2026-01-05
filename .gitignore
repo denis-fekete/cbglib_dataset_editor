@@ -1,5 +1,20 @@
 *__pycache__*
 TODO.md
 yolo*.pt
-models
-runs
+src/models
+src/runs
+*cache*
+.vscode
+pyrightconfig.json
+mypy.ini
+
+# venv
+venv
+
+#other
+other
+vision
+.pylintrc
+
+# data
+data

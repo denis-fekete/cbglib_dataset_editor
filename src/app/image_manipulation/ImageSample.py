@@ -1,0 +1,221 @@
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPixmap, QColor
+
+from pathlib import Path
+from datetime import datetime
+import cv2 as cv
+from typing import Callable
+
+from app.widgets import *
+from app.utils import Norm2Pixels, Pixels2Norm, Mat2QImage
+from .LabelBox import LabelBox
+from .LabelEntry import LabelEntry
+
+
+class ImageSample:
+    def __init__(
+        self,
+        rootPath: str,
+        name: str,
+        imagePath: str,
+        labelPath: str | None,
+        imageExt: str,
+        labelExt: str | None,
+        labelsDict: dict[int, LabelEntry],
+        screenScaleText_fn: Callable[[], float],
+    ) -> None:
+        self.rootPath: str = rootPath
+        self.name: str = name
+        self.imagePath: str = imagePath
+        self.labelPath: str | None = labelPath
+        self.imageExt: str = imageExt
+        self.labelExt: str | None = labelExt
+        self._screenScaleText_fn = screenScaleText_fn
+        self.labelsDict: dict[int, LabelEntry] = labelsDict
+
+        self.labelBoxes: list[LabelBox] = []
+        self.imageLabelBoxes: list[ImageLabelBox] = []
+        self.cvImage: cv.Mat | None = None
+        self.width: float = 0
+        self.height: float = 0
+        self._lastModified: datetime | None = None
+
+    def _loadImageAndLabel(self, skipLabel: bool = False) -> None:
+        """
+        Opens image and its label file from `imagePath` and `labelPath`. Dimensions of image are
+        stored in internal list of `LabelBoxes` `_labelBoxes`. Checks for existence of both files.
+        If image does not exist an exception is raised. For non existing label file no exception is raised.
+        """
+        imgPath = Path(self.rootPath) / self.imagePath / (self.name + self.imageExt)
+        if imgPath.is_file():
+            self.cvImage = cv.imread(imgPath.resolve()._str)
+            self.height, self.width = self.cvImage.shape[:2]
+        else:
+            raise Exception(f"Error: Image file does not exist: {imgPath}")
+
+        if skipLabel or self.labelPath is None or self.labelExt is None:
+            return
+
+        lblPath = Path(self.rootPath) / self.labelPath / (self.name + self.labelExt)
+        if lblPath.is_file():
+            lastModified = datetime.fromtimestamp(lblPath.stat().st_mtime)
+
+            if self._lastModified is not None and lastModified < self._lastModified:
+                return
+
+            try:
+                with open(lblPath, "r") as f:
+                    lines = f.readlines()
+
+                self.labelBoxes.clear()
+
+                for line in lines:
+                    parsed = [float(x) for x in line.split(" ")]
+                    label = int(parsed[0])
+                    x = parsed[1]
+                    y = parsed[2]
+                    w = parsed[3]
+                    h = parsed[4]
+
+                    x, y, w, h = Norm2Pixels(x, y, w, h, self.width, self.height)
+                    self.labelBoxes.append(LabelBox(x, y, w, h, label))
+            except:
+                raise Exception(
+                    f"Error: Label image exists but cannot be read: {lblPath}"
+                )
+
+    def load(self, selectedColor: QColor, defaultColor: QColor) -> None:
+        """
+        Loads internal list of `LabelBox` objects into the list of `ImageLabelBox` objects.
+        """
+        self._loadImageAndLabel(skipLabel=False)
+
+        print(f"Loading ImageSample: {self.name}:")
+        if len(self.imageLabelBoxes) == 0:
+            for label in self.labelBoxes:
+
+                newLabel = ImageLabelBox(
+                    QRectF(label.x, label.y, label.width, label.height),
+                    label.label,
+                    (
+                        self.labelsDict[label.label].name
+                        if (label.label >= 0)
+                        else "default"
+                    ),
+                    self._screenScaleText_fn,
+                    self.rect(),
+                    selectedColor=selectedColor,
+                    defaultColor=defaultColor,
+                )
+                self.imageLabelBoxes.append(newLabel)
+                print(
+                    f"\tsaved label:{label.label}, x:{label.x}, y:{label.y}, w:{label.width}, h:{label.height}"
+                )
+
+    def unload(self, save: bool = False) -> None:
+        """
+        Unloads list of graphical items (`ImageLabelBox`), if `save` is set to `True` the changes
+        will be stored in internal `_labelBoxes` and can later be stored into label file for this image.
+        """
+        if save:
+            self.labelBoxes.clear()
+
+            print(f"Unloading ImageSample: {self.name}:")
+            for imageLabelBox in self.imageLabelBoxes:
+                rect = imageLabelBox.rect()
+                self.labelBoxes.append(
+                    LabelBox(
+                        rect.x(),
+                        rect.y(),
+                        rect.width(),
+                        rect.height(),
+                        imageLabelBox.label,
+                    )
+                )
+                print(
+                    f"\tsaved label:{imageLabelBox.label}, x:{rect.x()}, y:{rect.y()}, w:{rect.width()}, h:{rect.height()}"
+                )
+            self._lastModified = datetime.now()
+
+        self.imageLabelBoxes.clear()
+        self.cvImage = None
+
+    def save(
+        self, exportImagePath: str | None = None, exportLabelPath: str | None = None
+    ) -> None:
+        """
+        Saves current `ImageSample` labels into label file based on `exportImagePath` and `exportLabelPath`.
+        If parameters are not defined default values for from `self.imagePath` `and self.labelPath`
+        will be used.
+        """
+        imagePath = exportImagePath if (exportImagePath is not None) else self.imagePath
+        labelPath = (
+            exportLabelPath
+            if (exportLabelPath is not None)
+            else self.labelPath if (self.labelPath is not None) else ""
+        )
+
+        if not Path(imagePath).exists():
+            raise Exception("Image path for saving ImageSample is not valid")
+        if not Path(labelPath).exists():
+            raise Exception("Label path for saving ImageSample is not valid")
+
+        if self.cvImage is None:
+            self._loadImageAndLabel(skipLabel=False)
+
+        fullImagePath = Path(imagePath) / (self.name + self.imageExt)
+        cv.imwrite(fullImagePath.resolve()._str, self.cvImage)
+
+        labelExt = self.labelExt if (self.labelExt is not None) else ".txt"
+        fullLabelPath = Path(labelPath) / (self.name + labelExt)
+
+        with open(fullLabelPath, "w") as f:
+            for labelBox in self.labelBoxes:
+                x, y, w, h = labelBox.getDimensionTuple()
+                x, y, w, h = Pixels2Norm(x, y, w, h, self.width, self.height)
+                f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
+
+    def reloadImageLabels(self) -> None:
+        """Reloads all labels `ImageLabelBoxes` in current ImageSample"""
+        for imageLabelBox in self.imageLabelBoxes:
+            imageLabelBox.setLabel(
+                imageLabelBox.label,
+                (
+                    self.labelsDict[imageLabelBox.label].name
+                    if (imageLabelBox.label >= 0)
+                    else "default"
+                ),
+            )
+
+    def add(self, imageLabelBox: ImageLabelBox) -> None:
+        self.imageLabelBoxes.append(imageLabelBox)
+
+    def remove(self, imageLabelBox: ImageLabelBox) -> None:
+        self.imageLabelBoxes.remove(imageLabelBox)
+
+    def getCvImage(self) -> cv.Mat | None:
+        if self.cvImage is None:
+            self._loadImageAndLabel(skipLabel=True)
+
+        return self.cvImage
+
+    def rect(self) -> QRectF:
+        return QRectF(0, 0, self.width, self.height)
+
+    def setCvImage(self, image: cv.Mat) -> None:
+        self.cvImage = image
+
+    def getQPixmap(self) -> QPixmap:
+        if self.cvImage is None:
+            self._loadImageAndLabel(skipLabel=True)
+
+        return QPixmap.fromImage(Mat2QImage(self.cvImage))
+
+    def getFullImagePath(self) -> str:
+        return (Path(self.rootPath) / self.imagePath).resolve()._str
+
+    def getFullLabelPath(self) -> str:
+        if self.labelPath is not None:
+            return (Path(self.rootPath) / self.labelPath).resolve()._str
+        else:
+            return ""
