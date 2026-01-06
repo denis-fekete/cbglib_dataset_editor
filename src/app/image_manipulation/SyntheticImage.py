@@ -23,19 +23,43 @@ class SyntheticImage:
 
         self.updateReference()
 
-    def save(self, exportImagePath: str, exportLabelPath: str) -> None:
+    def save(
+        self,
+        exportImagePath: str,
+        exportLabelPath: str,
+        separateByClasses: bool = False,
+        hasher: None | cv.img_hash.AverageHash = None,
+    ) -> None:
         """
         Saves current `FilterPreset` as an Image based on `exportImagePath` and `exportLabelPath`.
         """
+
+        className = self.imageReference.getClassName()
+
         filterName = f"_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
         filterName += f"_bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
         filterName += f"_sat{self.filter.saturation}"
         filterName += f"_spn{self.filter.sapNoise}_gn{self.filter.gaussianNoise}"
+        filterName = "_$f$_" + filterName
 
-        fileName = self.imageReference.name + "_filters_" + self.filter.name
-        fullImagePath = Path(exportImagePath) / (
-            fileName + self.imageReference.imageExt
-        )
+        fullImagePath = Path(exportImagePath)
+
+        if separateByClasses:
+            fullImagePath /= className
+
+        fullImagePath.mkdir(exist_ok=True)
+
+        if hasher is not None:
+            fullImagePath /= (
+                self.imageReference.generateNameFromImage(className, hasher)
+                + filterName
+                + self.imageReference.imageExt
+            )
+        else:
+            fullImagePath /= (
+                self.imageReference.name + filterName + self.imageReference.imageExt
+            )
+
         cv.imwrite(fullImagePath.resolve()._str, self.cvImage)
 
         labelExt = (
@@ -43,7 +67,17 @@ class SyntheticImage:
             if (self.imageReference.labelExt is not None)
             else ".txt"
         )
-        fullLabelPath = Path(exportLabelPath) / (fileName + labelExt)
+        fullLabelPath = Path(exportLabelPath)
+
+        if separateByClasses:
+            fullLabelPath /= className
+
+        if hasher is not None:
+            fullLabelPath /= (
+                self.imageReference.generateNameFromImage(className, hasher) + labelExt
+            )
+        else:
+            fullLabelPath /= self.imageReference.name + filterName + labelExt
 
         width = self.imageReference.width
         height = self.imageReference.height

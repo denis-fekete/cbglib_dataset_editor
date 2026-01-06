@@ -108,9 +108,6 @@ class ImageSample:
                     defaultColor=defaultColor,
                 )
                 self.imageLabelBoxes.append(newLabel)
-                print(
-                    f"\tsaved label:{label.label}, x:{label.x}, y:{label.y}, w:{label.width}, h:{label.height}"
-                )
 
     def unload(self, save: bool = False) -> None:
         """
@@ -132,16 +129,17 @@ class ImageSample:
                         imageLabelBox.label,
                     )
                 )
-                print(
-                    f"\tsaved label:{imageLabelBox.label}, x:{rect.x()}, y:{rect.y()}, w:{rect.width()}, h:{rect.height()}"
-                )
             self._lastModified = datetime.now()
 
         self.imageLabelBoxes.clear()
         self.cvImage = None
 
     def save(
-        self, exportImagePath: str | None = None, exportLabelPath: str | None = None
+        self,
+        exportImagePath: str | None = None,
+        exportLabelPath: str | None = None,
+        separateByClasses: bool = False,
+        hasher: None | cv.img_hash.AverageHash = None,
     ) -> None:
         """
         Saves current `ImageSample` labels into label file based on `exportImagePath` and `exportLabelPath`.
@@ -160,14 +158,52 @@ class ImageSample:
         if not Path(labelPath).exists():
             raise Exception("Label path for saving ImageSample is not valid")
 
+        fullImagePath = Path(imagePath)
+
         if self.cvImage is None:
             self._loadImageAndLabel(skipLabel=False)
 
-        fullImagePath = Path(imagePath) / (self.name + self.imageExt)
-        cv.imwrite(fullImagePath.resolve()._str, self.cvImage)
+        className = self.getClassName()
+
+        if separateByClasses:
+            fullImagePath /= className
+
+        fullImagePath.mkdir(exist_ok=True)
+
+        if hasher is not None:
+            fullImagePath /= (
+                self.generateNameFromImage(className, hasher) + self.imageExt
+            )
+        else:
+            fullImagePath /= self.name + self.imageExt
+
+        if fullImagePath.exists():
+            fullImagePath = Path(str(fullImagePath.resolve()) + "_1")
+
+        if self.cvImage is not None:
+            cv.imwrite(str(fullImagePath.resolve()), self.cvImage)
+        else:
+            print(
+                f"Error: Failed to save image, self.cvImage was None. Try to continue exporting."
+            )
+            return
 
         labelExt = self.labelExt if (self.labelExt is not None) else ".txt"
-        fullLabelPath = Path(labelPath) / (self.name + labelExt)
+
+        fullLabelPath = Path(labelPath)
+
+        if separateByClasses:
+            fullLabelPath /= className
+
+        fullLabelPath.mkdir(exist_ok=True)
+
+        if hasher is not None:
+            fullLabelPath /= self.generateNameFromImage(className, hasher) + labelExt
+        else:
+            fullLabelPath /= self.name + labelExt
+
+        if fullLabelPath.exists():
+            fullLabelPath = Path(str(fullLabelPath.resolve()) + "_1")
 
         with open(fullLabelPath, "w") as f:
             for labelBox in self.labelBoxes:
@@ -219,3 +255,25 @@ class ImageSample:
             return (Path(self.rootPath) / self.labelPath).resolve()._str
         else:
             return ""
+
+    def generateNameFromImage(
+        self, className: None | str, hasher: cv.img_hash.AverageHash
+    ) -> str:
+        if className is None:
+            className = self.getClassName()
+        if self.cvImage is not None:
+            hsh = hasher.compute(self.cvImage)
+            hshHex = hsh.flatten().tobytes().hex()
+
+            return f"{className}_{str(hshHex)}"
+        else:
+            return className
+
+    def getClassName(self) -> str:
+        if len(self.labelBoxes) == 1:
+            classId = self.labelBoxes[0].label
+            return self.labelsDict[classId].name
+        elif len(self.labelBoxes) > 1:
+            return "mixed"
+        else:
+            return "no_label"

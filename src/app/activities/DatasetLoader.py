@@ -90,11 +90,27 @@ class DatasetLoader(AbstractTabWidget):
         self._applyFiltersCheckBox = QtWidgets.QCheckBox("Apply filters")
         self._applyFiltersCheckBox.setChecked(True)
 
+        self._generateNameCheckBox = QtWidgets.QCheckBox("Generate name from class")
+        self._generateNameCheckBox.setChecked(True)
+
+        self._trainDataPercentageSpinBox = QtWidgets.QSpinBox(prefix="Train data %:")
+        self._trainDataPercentageSpinBox.setMinimum(0)
+        self._trainDataPercentageSpinBox.setMaximum(100)
+        self._trainDataPercentageSpinBox.setValue(100)
+
+        self._separateByClassesCheckBox = QtWidgets.QCheckBox(
+            "Separate classes into subdirectories"
+        )
+        self._separateByClassesCheckBox.setChecked(True)
+
         self._exportContainer.layout().addWidget(exportPathLabel, 0, 0, 1, 2)
         self._exportContainer.layout().addWidget(self._exportPathTextEdit, 1, 0)
         self._exportContainer.layout().addWidget(self._btnExportDialog, 1, 1)
-        self._exportContainer.layout().addWidget(self._btnExport, 2, 0)
-        self._exportContainer.layout().addWidget(self._applyFiltersCheckBox, 2, 1)
+        self._exportContainer.layout().addWidget(self._trainDataPercentageSpinBox, 2, 0)
+        self._exportContainer.layout().addWidget(self._generateNameCheckBox, 2, 1)
+        self._exportContainer.layout().addWidget(self._separateByClassesCheckBox, 2, 2)
+        self._exportContainer.layout().addWidget(self._applyFiltersCheckBox, 2, 3)
+        self._exportContainer.layout().addWidget(self._btnExport, 3, 0)
 
     def _initExportProgressContainer(self) -> None:
         self._exportProgressContainer = QtWidgets.QWidget()
@@ -151,11 +167,13 @@ class DatasetLoader(AbstractTabWidget):
         textPath = QtWidgets.QFileDialog().getExistingDirectory(
             self, "Select a Folder", "", QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
+        if textPath == "":
+            return
+        else:
+            self._importPathTextEdit.setText(textPath)
+            self.dataYamlPath = None
 
-        self._importPathTextEdit.setText(textPath)
-        self.dataYamlPath = None
-
-        self.loadDataset()
+            self.loadDataset()
 
     @Slot()
     def btnExportDialog_slot(self) -> None:
@@ -173,6 +191,7 @@ class DatasetLoader(AbstractTabWidget):
         if SharedValues().datasetExportPath == "":
             newExportPath = Path(SharedValues().datasetImportPath).parent / "exported"
             os.makedirs(newExportPath, exist_ok=True)
+            # SharedValues().datasetExportPath = _exportPathTextEdit.text() called automatically
             self._exportPathTextEdit.setText(str(newExportPath.resolve()))
         else:
             if exportPath.exists():
@@ -184,12 +203,7 @@ class DatasetLoader(AbstractTabWidget):
                     )
                     return
             else:
-                QtWidgets.QMessageBox.critical(
-                    self,
-                    "Error",
-                    "Export root path is not valid, please update it!",
-                )
-                return
+                exportPath.mkdir(exist_ok=True)
 
         self.saveImageSamplesStart()
 
@@ -247,6 +261,9 @@ class DatasetLoader(AbstractTabWidget):
             labelsDict=SharedValues().labelsDict,
             exportRootPath=SharedValues().datasetExportPath,
             applyFilters=self._applyFiltersCheckBox.isChecked(),
+            separateByClasses=self._separateByClassesCheckBox.isChecked(),
+            generateNameFromClass=self._generateNameCheckBox.isChecked(),
+            trainDataPercentage=self._trainDataPercentageSpinBox.value(),
         )
         self.worker.moveToThread(self.workerThread)
 

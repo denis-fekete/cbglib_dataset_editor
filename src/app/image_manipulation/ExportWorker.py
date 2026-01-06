@@ -3,6 +3,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 import random
 import os
 import yaml
+import cv2 as cv
 from pathlib import Path
 
 from .ImageSample import ImageSample
@@ -12,9 +13,6 @@ from .LabelEntry import LabelEntry
 
 
 class ExportWorker(QObject):
-    VALIDATION_THRESHOLD_PERCENT = 30
-    VALIDATION_THRESHOLD_MAX = 20
-
     def __init__(
         self,
         imageSamples: list[ImageSample],
@@ -22,6 +20,9 @@ class ExportWorker(QObject):
         labelsDict: dict[int, LabelEntry],
         exportRootPath: str,
         applyFilters: bool,
+        separateByClasses: bool,
+        generateNameFromClass: bool,
+        trainDataPercentage: int,
     ) -> None:
         super().__init__()
         self.imageSamples = imageSamples
@@ -29,6 +30,9 @@ class ExportWorker(QObject):
         self.exportRootPath = exportRootPath
         self.labelsDict = labelsDict
         self.applyFilters = applyFilters
+        self.separateByClasses = separateByClasses
+        self.trainDataPercentage = trainDataPercentage
+        self.generateNameFromClass = generateNameFromClass
 
     progress = Signal(int)
     finished = Signal()
@@ -69,14 +73,18 @@ class ExportWorker(QObject):
         trainImages: list[ImageSample] = []
         valImages: list[ImageSample] = []
 
+        maxTrainImages = int(
+            (len(self.imageSamples) / 100.0) * self.trainDataPercentage
+        )
+
         for imageSample in self.imageSamples:
             if (
-                random.randint(0, 100) < self.VALIDATION_THRESHOLD_PERCENT
-                and len(valImages) <= self.VALIDATION_THRESHOLD_MAX
+                random.randint(0, 100) <= self.trainDataPercentage
+                and len(trainImages) <= maxTrainImages
             ):
-                valImages.append(imageSample)
-            else:
                 trainImages.append(imageSample)
+            else:
+                valImages.append(imageSample)
 
         progressCnt = 0
         if self.applyFilters:
@@ -86,12 +94,18 @@ class ExportWorker(QObject):
         else:
             progressStep = 100 / (len(trainImages) + len(valImages))
 
+        hasher = None
+        if self.generateNameFromClass:
+            hasher = cv.img_hash.AverageHash().create()
+
         sFilter = SyntheticImage()
         for imageSample in trainImages:
             imageSample: ImageSample = imageSample
             imageSample.save(
-                exportImagePath=trainImagesPath.resolve()._str,
-                exportLabelPath=trainLabelPath.resolve()._str,
+                exportImagePath=str(trainImagesPath.resolve()),
+                exportLabelPath=str(trainLabelPath.resolve()),
+                separateByClasses=self.separateByClasses,
+                hasher=hasher,
             )
 
             progressCnt = progressCnt + progressStep
@@ -102,7 +116,10 @@ class ExportWorker(QObject):
                     sFilter.filter = preset
                     sFilter.setReference(imageSample)
                     sFilter.save(
-                        trainImagesPath.resolve()._str, trainLabelPath.resolve()._str
+                        str(trainImagesPath.resolve()),
+                        str(trainLabelPath.resolve()),
+                        self.separateByClasses,
+                        hasher=hasher,
                     )
 
                     progressCnt = progressCnt + progressStep
@@ -111,8 +128,10 @@ class ExportWorker(QObject):
         for imageSample in valImages:
             imageSample: ImageSample = imageSample
             imageSample.save(
-                exportImagePath=valImagesPath.resolve()._str,
-                exportLabelPath=valLabelPath.resolve()._str,
+                exportImagePath=str(valImagesPath.resolve()),
+                exportLabelPath=str(valLabelPath.resolve()),
+                separateByClasses=self.separateByClasses,
+                hasher=hasher,
             )
 
             progressCnt = progressCnt + progressStep

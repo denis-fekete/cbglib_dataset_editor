@@ -303,10 +303,17 @@ class DataLabeler(AbstractTabWidget):
             defaultLabelName,
             self.screenScaleText,
             self.currentImageSample.rect(),
+            self._selectedColorPicker.color,
+            self._defaultColorPicker.color,
         )
 
         self.currentImageSample.add(newLabelBox)
         self._scene.addItem(newLabelBox)
+
+        if self._view.selectedItem is not None:
+            self._view.selectedItem.setSelected(False)
+        self._view.selectedItem = newLabelBox
+        self._view.selectedItem.setSelected(True)
 
     def deleteImageLabelBox_slot(self) -> None:
         """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
