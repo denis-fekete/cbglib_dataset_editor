@@ -74,7 +74,9 @@ class SyntheticImage:
 
         if hasher is not None:
             fullLabelPath /= (
-                self.imageReference.generateNameFromImage(className, hasher) + labelExt
+                self.imageReference.generateNameFromImage(className, hasher)
+                + filterName
+                + labelExt
             )
         else:
             fullLabelPath /= self.imageReference.name + filterName + labelExt

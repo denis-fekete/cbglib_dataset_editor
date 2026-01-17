@@ -125,6 +125,8 @@ class ExportWorker(QObject):
                     progressCnt = progressCnt + progressStep
                     self.progress.emit(progressCnt)
 
+            imageSample.cvImage = None
+
         for imageSample in valImages:
             imageSample: ImageSample = imageSample
             imageSample.save(
@@ -133,6 +135,8 @@ class ExportWorker(QObject):
                 separateByClasses=self.separateByClasses,
                 hasher=hasher,
             )
+
+            imageSample.cvImage = None
 
             progressCnt = progressCnt + progressStep
             self.progress.emit(progressCnt)

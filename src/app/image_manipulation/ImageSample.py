@@ -178,7 +178,7 @@ class ImageSample:
             fullImagePath /= self.name + self.imageExt
 
         if fullImagePath.exists():
-            fullImagePath = Path(str(fullImagePath.resolve()) + "_1")
+            fullImagePath = Path(fullImagePath.stem + "_1" + fullImagePath.suffix)
 
         if self.cvImage is not None:
             cv.imwrite(str(fullImagePath.resolve()), self.cvImage)
@@ -203,7 +203,7 @@ class ImageSample:
             fullLabelPath /= self.name + labelExt
 
         if fullLabelPath.exists():
-            fullLabelPath = Path(str(fullLabelPath.resolve()) + "_1")
+            fullLabelPath = fullLabelPath.stem + "_1" + fullLabelPath.suffix
 
         with open(fullLabelPath, "w") as f:
             for labelBox in self.labelBoxes:
