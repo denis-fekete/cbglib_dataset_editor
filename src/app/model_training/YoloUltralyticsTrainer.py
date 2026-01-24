@@ -73,6 +73,8 @@ class YoloUltralyticsTrainer(AbstractModelTrainer):
                 name=self.modelName,
             )
 
+            model.export(format="onnx")
+
             self.finished.emit()
 
         except Exception as e:
