@@ -6,7 +6,9 @@ from app.widgets import *
 from app.utils import *
 from app.image_manipulation import *
 from app.data_classes import *
+from app.vision import *
 from .AbstractTabWidget import AbstractTabWidget
+from PySide6.QtCore import Slot
 
 
 class DataLabeler(AbstractTabWidget):
@@ -14,6 +16,7 @@ class DataLabeler(AbstractTabWidget):
         super().__init__()
 
         self.currentImageSample: ImageSample | None = None
+        self.imageAnalyzer: ImageAnalyzer | None = None
 
         self._initUI()
         self.initShortcuts()
@@ -29,31 +32,61 @@ class DataLabeler(AbstractTabWidget):
             0, 0, self._view.rect().width() * 0.9, self._view.rect().height() * 0.9
         )
 
+        self._initTopToolbarContainer()
+        self._initAutoDetectionContainer()
         self._initLabelSelectorContainer()
         self._initImageSampleSelectorContainer()
-        self._initTopToolbarContainer()
-        self._initSelectorsContainer()
 
-        self.layout().addWidget(self._topToolbarContainer, 0, 1)
-        self.layout().addWidget(self._selectorsContainer, 1, 0)
+        self.layout().addWidget(self._topToolbarContainer, 0, 0)
+        self.layout().addWidget(self._autoDetectionContainer, 0, 1)
+        self.layout().layout().addWidget(self._imageSampleSelectorContainer, 1, 0)
         self.layout().addWidget(self._view, 1, 1)
+        self.layout().addWidget(self._labelSelectorContainer, 1, 2)
+
+    def _initAutoDetectionContainer(self):
+        self._autoDetectionContainer = QtWidgets.QWidget()
+        self._autoDetectionContainer.setLayout(QtWidgets.QHBoxLayout())
+        self._autoDetectionContainer.layout().setSpacing(0)
+        self._autoDetectionContainer.layout().setContentsMargins(0, 0, 0, 0)
+        self._autoDetectionContainer.setMaximumHeight(20)
+
+        self._btnAutoDetect = QtWidgets.QPushButton("Detect")
+        self._btnAutoDetect.setMaximumWidth(100)
+        self._btnAutoDetect.clicked.connect(self.autoDetectLabels_slot)
+        self._btnAutoDetect.setEnabled(False)
+
+        self._textEditModelPath = QtWidgets.QLineEdit()
+
+        self._btnOpenModel = QtWidgets.QPushButton("Open")
+        self._btnOpenModel.setMaximumWidth(100)
+        self._btnOpenModel.clicked.connect(self.openModel_slot)
+
+        self._btnLoadModel = QtWidgets.QPushButton("Load")
+        self._btnLoadModel.setMaximumWidth(100)
+        self._btnLoadModel.clicked.connect(self.loadModel_slot)
+
+        container = Container(QtWidgets.QHBoxLayout(), maxHeight=20)
+        container.addWidgets([QtWidgets.QLabel("Model path:"), self._textEditModelPath])
+
+        self._autoDetectionContainer.layout().addWidget(self._btnAutoDetect)
+        self._autoDetectionContainer.layout().addWidget(container)
+        self._autoDetectionContainer.layout().addWidget(self._btnOpenModel)
+        self._autoDetectionContainer.layout().addWidget(self._btnLoadModel)
 
     def _initTopToolbarContainer(self) -> None:
         self._topToolbarContainer = QtWidgets.QWidget()
         self._topToolbarContainer.setLayout(QtWidgets.QHBoxLayout())
         self._topToolbarContainer.layout().setSpacing(0)
-        self._topToolbarContainer.layout().setContentsMargins(0, 0, 0, 0)
-        self._topToolbarContainer.setMaximumHeight(20)
+        self._topToolbarContainer.layout().setContentsMargins(0, 0, 100, 0)
+        self._topToolbarContainer.setMaximumHeight(25)
 
         self._btnNewLabel = QtWidgets.QPushButton("New label")
         self._btnNewLabel.setMaximumWidth(100)
-        self._topToolbarContainer.layout().addWidget(self._btnNewLabel)
-        self._topToolbarContainer.layout().addWidget(QtWidgets.QLabel("(Ctrl+W)"))
+        self._btnNewLabel.clicked.connect(self.newImageLabelBox_slot)
 
         self._btnDeleteLabel = QtWidgets.QPushButton("Delete label")
         self._btnDeleteLabel.setMaximumWidth(100)
-        self._topToolbarContainer.layout().addWidget(self._btnDeleteLabel)
-        self._topToolbarContainer.layout().addWidget(QtWidgets.QLabel("(Del)"))
+        self._btnDeleteLabel.clicked.connect(self.deleteImageLabelBox_slot)
 
         self._selectedColorPicker = ColorPicker(
             QColor(160, 255, 160), self._updateImageLabelBoxesColors
@@ -65,11 +98,26 @@ class DataLabeler(AbstractTabWidget):
         )
         self._defaultColorPicker.setMaximumWidth(50)
 
-        self._topToolbarContainer.layout().addWidget(self._selectedColorPicker)
-        self._topToolbarContainer.layout().addWidget(self._defaultColorPicker)
+        containerNew = Container(
+            QtWidgets.QHBoxLayout(), margins=QtCore.QMargins(0, 0, 20, 0)
+        )
+        containerNew.addWidgets([self._btnNewLabel, QtWidgets.QLabel("(Ctrl+W)")])
 
-        self._btnNewLabel.clicked.connect(self.newImageLabelBox_slot)
-        self._btnDeleteLabel.clicked.connect(self.deleteImageLabelBox_slot)
+        containerDelete = Container(
+            QtWidgets.QHBoxLayout(), margins=QtCore.QMargins(0, 0, 20, 0)
+        )
+        containerDelete.addWidgets([self._btnDeleteLabel, QtWidgets.QLabel("(Del)")])
+
+        containerColorPickers = Container(
+            QtWidgets.QHBoxLayout(), margins=QtCore.QMargins(0, 0, 20, 0)
+        )
+        containerDelete.addWidgets(
+            [self._selectedColorPicker, self._defaultColorPicker]
+        )
+
+        self._topToolbarContainer.layout().addWidget(containerNew)
+        self._topToolbarContainer.layout().addWidget(containerDelete)
+        self._topToolbarContainer.layout().addWidget(containerColorPickers)
 
     def _initSelectorsContainer(self) -> None:
         self._selectorsContainer = QtWidgets.QWidget()
@@ -89,8 +137,11 @@ class DataLabeler(AbstractTabWidget):
     def _initLabelSelectorContainer(self) -> None:
         self._labelSelectorContainer = QtWidgets.QWidget()
         self._labelSelectorContainer.setLayout(QtWidgets.QGridLayout())
+        self._labelSelectorContainer.layout().setSpacing(0)
+        self._labelSelectorContainer.setMaximumWidth(250)
 
         self._labelSelector = LabelSelectorTreeView(SharedValues().labelsDict)
+        self._labelSelector.setMaximumWidth(240)
         self._labelSelector.clicked.connect(self.labelSelected_slot)
         self._labelSelector.model.dataChanged.connect(self.labelChanged_slot)
 
@@ -110,6 +161,8 @@ class DataLabeler(AbstractTabWidget):
     def _initImageSampleSelectorContainer(self) -> None:
         self._imageSampleSelectorContainer = QtWidgets.QWidget()
         self._imageSampleSelectorContainer.setLayout(QtWidgets.QGridLayout())
+        self._imageSampleSelectorContainer.layout().setSpacing(0)
+        self._imageSampleSelectorContainer.setMaximumWidth(200)
 
         self._imageSampleTreeView = ImageSampleTreeView(SharedValues().imageSamples)
         self._imageSampleTreeView.loadSamples()
@@ -138,9 +191,9 @@ class DataLabeler(AbstractTabWidget):
         )
 
         labelPrevious = QtWidgets.QLabel("(Ctrl+Q)")
-        labelPrevious.setContentsMargins(30, 0, 0, 0)
+        labelPrevious.setContentsMargins(10, 0, 0, 0)
         labelNext = QtWidgets.QLabel("(Ctrl+E)")
-        labelNext.setContentsMargins(30, 0, 0, 0)
+        labelNext.setContentsMargins(10, 0, 0, 0)
 
         self._imageSampleSelectorContainer.layout().addWidget(labelPrevious, 3, 0)
         self._imageSampleSelectorContainer.layout().addWidget(labelNext, 3, 1)
@@ -160,6 +213,9 @@ class DataLabeler(AbstractTabWidget):
         self._shortcutPreviousImageSample.activated.connect(
             self.previousImageSample_slot
         )
+
+        self._autoDetectLabels = QShortcut(QKeySequence("Tab"), self)
+        self._autoDetectLabels.activated.connect(self.autoDetectLabels_slot)
 
     def _correctSceneAndView(self) -> None:
         """Corrects scale of `QGraphicsView` based on loaded `ImageSample`"""
@@ -236,6 +292,7 @@ class DataLabeler(AbstractTabWidget):
                 checkImageLabelBoxes=False,
             )
 
+    @Slot()
     def labelSelected_slot(self, index: QModelIndex):
         """Slot called when label from `_labelSelector` was changed"""
 
@@ -259,6 +316,7 @@ class DataLabeler(AbstractTabWidget):
                     checkImageLabelBoxes=True,
                 )
 
+    @Slot()
     def labelChanged_slot(
         self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]
     ) -> None:
@@ -275,6 +333,7 @@ class DataLabeler(AbstractTabWidget):
 
             self.currentImageSample.reloadImageLabels()
 
+    @Slot()
     def newImageLabelBox_slot(self) -> None:
         """Create new `ImageLabelBox` and add it to the `ImageSample`"""
         if self.currentImageSample is None:
@@ -315,6 +374,7 @@ class DataLabeler(AbstractTabWidget):
         self._view.selectedItem = newLabelBox
         self._view.selectedItem.setSelected(True)
 
+    @Slot()
     def deleteImageLabelBox_slot(self) -> None:
         """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
         if self._view.selectedItem is not None:
@@ -322,12 +382,14 @@ class DataLabeler(AbstractTabWidget):
             self._scene.removeItem(self._view.selectedItem)
         self._view.selectedItem = None
 
+    @Slot()
     def newLabel_slot(self) -> None:
         """Creates new `LabelEntry` into global dictionary of labels"""
         index = len(SharedValues().labelsDict)
         SharedValues().labelsDict[index] = LabelEntry("new", index, None)
         self._labelSelector.loadLabels()
 
+    @Slot()
     def deleteLabel_slot(self) -> None:
         """Deletes label from global list of labels, all keys will be moved down"""
         if self._labelSelector.currIndex is None:
@@ -367,6 +429,7 @@ class DataLabeler(AbstractTabWidget):
 
         self._labelSelector.loadLabels()
 
+    @Slot()
     def nextImageSample_slot(self) -> None:
         if self.currentImageSample is None:
             return
@@ -376,6 +439,7 @@ class DataLabeler(AbstractTabWidget):
         if nextIndex.isValid():
             self._imageSampleTreeView.setCurrentIndex(nextIndex)
 
+    @Slot()
     def previousImageSample_slot(self) -> None:
         if self.currentImageSample is None:
             return
@@ -384,6 +448,58 @@ class DataLabeler(AbstractTabWidget):
         previousIndex = self._imageSampleTreeView.indexAbove(currentIndex)
         if previousIndex.isValid():
             self._imageSampleTreeView.setCurrentIndex(previousIndex)
+
+    @Slot()
+    def autoDetectLabels_slot(self) -> None:
+        if self.imageAnalyzer is None:
+            self._btnAutoDetect.setEnabled(False)
+            return
+        else:
+            if self.currentImageSample is None:
+                return
+
+            image = self.currentImageSample.getCvImage()
+            if image is None:
+                return
+
+            detections = self.imageAnalyzer.analyze(image)
+
+            for det in detections:
+                box = ImageLabelBox(
+                    QRectF(det.xCenter, det.yCenter, det.width, det.height),
+                    det.classIndex,
+                    SharedValues().labelsDict[det.classIndex].name,
+                    self.screenScaleText,
+                    self.currentImageSample.rect(),
+                    self._selectedColorPicker.color,
+                    self._defaultColorPicker.color,
+                )
+
+                self.currentImageSample.add(box)
+                self._scene.addItem(box)
+
+    @Slot()
+    def loadModel_slot(self) -> None:
+        EXPECTED_MODEL_SIZE = 640
+
+        if self._textEditModelPath.text() != "":
+            self._btnAutoDetect.setEnabled(True)
+            self.imageAnalyzer = ImageAnalyzer(
+                self._textEditModelPath.text(),
+                EXPECTED_MODEL_SIZE,
+                (114, 114, 114),
+                0.6,
+                0.4,
+            )
+
+    @Slot()
+    def openModel_slot(self) -> None:
+        """Open OS dialog window to choose a directory from which a dataset will be imported"""
+        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Select a model", "", "ONNX models (*.onnx)"
+        )
+        if fileName:
+            self._textEditModelPath.setText(fileName)
 
     def screenScaleText(self) -> float:
         """Returns maximum width or height of windows. Used for scaling different UI elements"""
@@ -427,4 +543,5 @@ class DataLabeler(AbstractTabWidget):
     def tabClosed(self) -> None:
         if self.currentImageSample is not None:
             self.currentImageSample.unload(save=True)
+
         self._scene.clear()

@@ -12,7 +12,7 @@ from app.widgets import *
 from app.image_manipulation import *
 from app.utils import *
 from app.data_classes import *
-from app.model_training import *
+from app.vision import *
 from .AbstractTabWidget import AbstractTabWidget
 
 

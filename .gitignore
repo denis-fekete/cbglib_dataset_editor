@@ -13,7 +13,6 @@ venv
 
 #other
 other
-vision
 .pylintrc
 src/file_counter.py
 
