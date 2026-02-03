@@ -1,3 +1,13 @@
+"""
+Module: ZoomGraphicsView.py
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+    A derived class from QGraphicsView that provides zoom in/out functionality and allows for
+    callbacks on QGraphicsItem mouseClicked events.
+"""
+
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QGraphicsItem
 from PySide6.QtGui import QPainter, QMouseEvent, QWheelEvent
 from PySide6.QtCore import Qt
@@ -5,6 +15,7 @@ from PySide6.QtCore import Qt
 from typing import Callable
 
 from app.widgets import *
+from app.labeling import ImageLabelBox
 
 
 class ZoomGraphicsView(QGraphicsView):

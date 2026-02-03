@@ -1,9 +1,18 @@
+"""
+Module: ImageSampleTreeView.py
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+     Derived class from QTreeView that shows ImageSample objects in QTreeView.
+"""
+
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QHeaderView, QAbstractItemView
 from PySide6.QtGui import QStandardItem
 
-from app.image_manipulation import *
+from app.labeling import ImageSample
 
 
 class ImageSampleTreeView(QtWidgets.QTreeView):

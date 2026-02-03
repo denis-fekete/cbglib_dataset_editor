@@ -1,3 +1,12 @@
+"""
+Module: ImageScene
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+    Derived class from QGraphicsScene that draws a bitmap image onto the QGraphicsScene.
+"""
+
 from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import QRectF, QRect
 from PySide6.QtGui import QPixmap, QPainter

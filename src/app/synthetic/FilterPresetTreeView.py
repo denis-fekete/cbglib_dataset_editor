@@ -1,23 +1,23 @@
 """
-Module: LabelSelectorTreeView.py
+Module: FilterPresetTreeView.py
 Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
 Created: 2026-02-02
 
 Description:
-    Derived class from QTreeView that shows LabelEntry objects in QTreeView
+    Class derived QTreeView that shows `FilterPresent` objects.
 """
 
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtCore import QItemSelectionModel, QModelIndex, Qt
+from PySide6.QtCore import QItemSelectionModel, QModelIndex
 from PySide6.QtWidgets import QHeaderView
 
-from app.labeling import *
+from app.synthetic import *
 
 
-class LabelSelectorTreeView(QtWidgets.QTreeView):
-    def __init__(self, labels: dict[int, LabelEntry]) -> None:
+class FilterPresetTreeView(QtWidgets.QTreeView):
+    def __init__(self, filterPresets: list[FilterPreset]) -> None:
         super().__init__()
-        self.labelsDict: dict[int, LabelEntry] = labels
+        self.filterPresets: list[FilterPreset] = filterPresets
         self.model: QtGui.QStandardItemModel = QtGui.QStandardItemModel()  # type: ignore
         self.currQIndex: QModelIndex | None = None
         self.currIndex: int | None = None
@@ -28,21 +28,16 @@ class LabelSelectorTreeView(QtWidgets.QTreeView):
     def loadLabels(self) -> None:
         """Loads labels into the model and tree view"""
         self.model.clear()
-        self.model.setHorizontalHeaderLabels(["#", "Name"])
+        self.model.setHorizontalHeaderLabels(["Filter name"])
 
         self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
 
-        for label in self.labelsDict.values():
-            index = QtGui.QStandardItem(str(label.index))
-            index.setFlags(index.flags() & ~Qt.ItemFlag.ItemIsEditable)
-
-            labelName = QtGui.QStandardItem(label.name)
-
-            self.model.appendRow([index, labelName])
+        for sFilter in self.filterPresets:
+            filterName = QtGui.QStandardItem(sFilter.name)
+            self.model.appendRow([filterName])
 
     def selectLabel(self, index: QModelIndex) -> None:
-        """Selects current index of LabelEntry based on `index`"""
+        """Selects current index of ImageLabelBox based on `index`"""
         self.selectionModel().select(
             index,
             QItemSelectionModel.SelectionFlag.Select

@@ -1,19 +1,17 @@
 from .ColorPicker import ColorPicker
 from .Container import Container
-from .ImageLabelBox import ImageLabelBox
 from .ImageSampleTreeView import ImageSampleTreeView
 from .ImageScene import ImageScene
 from .LabelSelectorTreeView import LabelSelectorTreeView
-from .FilterPresetTreeView import FilterPresetTreeView
 from .ZoomGraphicsView import ZoomGraphicsView
+from .AbstractTabWidget import AbstractTabWidget
 
 __all__ = [
-            "ColorPicker",
-            "Container",
-            "ImageLabelBox", 
-            "ImageSampleTreeView", 
-            "ImageScene", 
-            "LabelSelectorTreeView",
-            "FilterPresetTreeView",
-            "ZoomGraphicsView", 
-           ]
+    "AbstractTabWidget",
+    "ColorPicker",
+    "Container",
+    "ImageSampleTreeView",
+    "ImageScene",
+    "LabelSelectorTreeView",
+    "ZoomGraphicsView",
+]

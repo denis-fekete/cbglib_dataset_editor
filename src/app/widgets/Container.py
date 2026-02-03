@@ -1,3 +1,13 @@
+"""
+Module: Container.py
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+    Class derived from QWidget used for joining multiple graphical objects into a group or an
+    container.
+"""
+
 from PySide6 import QtWidgets
 from PySide6.QtCore import QMargins
 

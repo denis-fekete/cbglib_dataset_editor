@@ -1,13 +1,26 @@
+"""
+Module: main.py
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+    Main file for project cbglib_dataset_editor. This application (or tool) is to provide a
+    simplified way to create a labeled image datasets that can be enhanced with synthetic data.
+    Application also provides a way to train data in application.
+"""
+
 from PySide6 import QtWidgets
 from PySide6.QtGui import QCloseEvent
 
 import sys
 
+from app.labeling import *
+from app.dataset import *
+from app.synthetic import *
 from app.widgets import *
 from app.utils import *
+from app.training import *
 from app.activities import *
-from app.image_manipulation import *
-from app.data_classes import *
 
 ##############################################################################
 

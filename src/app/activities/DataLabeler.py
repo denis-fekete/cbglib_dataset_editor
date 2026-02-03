@@ -1,14 +1,31 @@
+"""
+Module: DataLabeler.py
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+    Widget containing functionality for labeling image data that were loaded in DatasetLoader
+    widget.
+"""
+
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtCore import QRectF, QModelIndex
-from PySide6.QtGui import QBrush, QShortcut, QKeySequence, QCursor, QColor
+from PySide6.QtCore import QModelIndex, Slot
+from PySide6.QtGui import QBrush, QShortcut, QKeySequence, QCursor
 
 from app.widgets import *
 from app.utils import *
-from app.image_manipulation import *
-from app.data_classes import *
-from app.vision import *
-from .AbstractTabWidget import AbstractTabWidget
-from PySide6.QtCore import Slot
+from app.analysis import *
+
+from app.labeling.Box import Box
+from app.labeling.ImageSample import ImageSample
+from app.labeling.ImageLabelBox import ImageLabelBox
+from app.labeling.pointInRectangle import pointInRectangle
+from app.labeling.LabelEntry import LabelEntry
+
+from .dataLabelerWidgets.ImageSampleBrowser import ImageBrowser
+from .dataLabelerWidgets.ClassLabelsBrowser import ClassLabelsBrowser
+from .dataLabelerWidgets.AutoDetectToolbar import AutoDetectToolbar
+from .dataLabelerWidgets.ImageLabelBoxToolbar import ImageLabelBoxToolbar
 
 
 class DataLabeler(AbstractTabWidget):
@@ -19,221 +36,287 @@ class DataLabeler(AbstractTabWidget):
         self.imageAnalyzer: ImageAnalyzer | None = None
 
         self._initUI()
-        self.initShortcuts()
+        self.setupShortcuts()
 
     def _initUI(self) -> None:
         self.setLayout(QtWidgets.QGridLayout())
 
         self._scene = ImageScene()
-        self._view = ZoomGraphicsView(self._scene, self.onGraphicsItemClickSlot)
+        self.imageView = ZoomGraphicsView(self._scene, self.graphicsItemClicked)
 
         self._scene.setBackgroundBrush(QBrush(QtCore.Qt.GlobalColor.white))
         self._scene.setSceneRect(
-            0, 0, self._view.rect().width() * 0.9, self._view.rect().height() * 0.9
+            0,
+            0,
+            self.imageView.rect().width() * 0.9,
+            self.imageView.rect().height() * 0.9,
         )
 
-        self._initTopToolbarContainer()
-        self._initAutoDetectionContainer()
-        self._initLabelSelectorContainer()
-        self._initImageSampleSelectorContainer()
+        self.imageLabelBoxToolbar = ImageLabelBoxToolbar()
+        self.imageLabelBoxToolbar.new.connect(self.imageLabelBoxNewClicked)
+        self.imageLabelBoxToolbar.delete.connect(self.imageLabelBoxDeleteClicked)
+        self.imageLabelBoxToolbar.updateColors.connect(self.updateImageLabelBoxColors)
 
-        self.layout().addWidget(self._topToolbarContainer, 0, 0)
-        self.layout().addWidget(self._autoDetectionContainer, 0, 1)
-        self.layout().layout().addWidget(self._imageSampleSelectorContainer, 1, 0)
-        self.layout().addWidget(self._view, 1, 1)
-        self.layout().addWidget(self._labelSelectorContainer, 1, 2)
+        self.autoDetectToolbar = AutoDetectToolbar()
+        self.autoDetectToolbar.autoDetect.connect(self.autoDetectLabelsClicked)
+        self.autoDetectToolbar.openModel.connect(self.openModelClicked)
+        self.autoDetectToolbar.loadModel.connect(self.loadModelClicked)
 
-    def _initAutoDetectionContainer(self):
-        self._autoDetectionContainer = QtWidgets.QWidget()
-        self._autoDetectionContainer.setLayout(QtWidgets.QHBoxLayout())
-        self._autoDetectionContainer.layout().setSpacing(0)
-        self._autoDetectionContainer.layout().setContentsMargins(0, 0, 0, 0)
-        self._autoDetectionContainer.setMaximumHeight(20)
+        self.imageBrowser = ImageBrowser()
+        self.imageBrowser.nextImage.connect(self.nextImageSampleClicked)
+        self.imageBrowser.previousImage.connect(self.previousImageSampleClicked)
+        self.imageBrowser.imageSampleChanged.connect(self.imageSampleChanged)
 
-        self._btnAutoDetect = QtWidgets.QPushButton("Detect")
-        self._btnAutoDetect.setMaximumWidth(100)
-        self._btnAutoDetect.clicked.connect(self.autoDetectLabels_slot)
-        self._btnAutoDetect.setEnabled(False)
+        self.classLabelsBrowser = ClassLabelsBrowser()
+        self.classLabelsBrowser.labelsChanged.connect(self.classLabelsChanged)
+        self.classLabelsBrowser.dataEdited.connect(self.classLabelsEdited)
+        self.classLabelsBrowser.new.connect(self.classLabelsNewEntry)
+        self.classLabelsBrowser.delete.connect(self.classLabelsDeleteEntry)
 
-        self._textEditModelPath = QtWidgets.QLineEdit()
+        self.layout().addWidget(self.imageLabelBoxToolbar, 0, 0)
+        self.layout().addWidget(self.autoDetectToolbar, 0, 1)
+        self.layout().layout().addWidget(self.imageBrowser, 1, 0)
+        self.layout().addWidget(self.imageView, 1, 1)
+        self.layout().addWidget(self.classLabelsBrowser, 1, 2)
 
-        self._btnOpenModel = QtWidgets.QPushButton("Open")
-        self._btnOpenModel.setMaximumWidth(100)
-        self._btnOpenModel.clicked.connect(self.openModel_slot)
-
-        self._btnLoadModel = QtWidgets.QPushButton("Load")
-        self._btnLoadModel.setMaximumWidth(100)
-        self._btnLoadModel.clicked.connect(self.loadModel_slot)
-
-        container = Container(QtWidgets.QHBoxLayout(), maxHeight=20)
-        container.addWidgets([QtWidgets.QLabel("Model path:"), self._textEditModelPath])
-
-        self._autoDetectionContainer.layout().addWidget(self._btnAutoDetect)
-        self._autoDetectionContainer.layout().addWidget(container)
-        self._autoDetectionContainer.layout().addWidget(self._btnOpenModel)
-        self._autoDetectionContainer.layout().addWidget(self._btnLoadModel)
-
-    def _initTopToolbarContainer(self) -> None:
-        self._topToolbarContainer = QtWidgets.QWidget()
-        self._topToolbarContainer.setLayout(QtWidgets.QHBoxLayout())
-        self._topToolbarContainer.layout().setSpacing(0)
-        self._topToolbarContainer.layout().setContentsMargins(0, 0, 100, 0)
-        self._topToolbarContainer.setMaximumHeight(25)
-
-        self._btnNewLabel = QtWidgets.QPushButton("New label")
-        self._btnNewLabel.setMaximumWidth(100)
-        self._btnNewLabel.clicked.connect(self.newImageLabelBox_slot)
-
-        self._btnDeleteLabel = QtWidgets.QPushButton("Delete label")
-        self._btnDeleteLabel.setMaximumWidth(100)
-        self._btnDeleteLabel.clicked.connect(self.deleteImageLabelBox_slot)
-
-        self._selectedColorPicker = ColorPicker(
-            QColor(160, 255, 160), self._updateImageLabelBoxesColors
-        )
-        self._selectedColorPicker.setMaximumWidth(50)
-
-        self._defaultColorPicker = ColorPicker(
-            QColor(10, 10, 10), self._updateImageLabelBoxesColors
-        )
-        self._defaultColorPicker.setMaximumWidth(50)
-
-        containerNew = Container(
-            QtWidgets.QHBoxLayout(), margins=QtCore.QMargins(0, 0, 20, 0)
-        )
-        containerNew.addWidgets([self._btnNewLabel, QtWidgets.QLabel("(Ctrl+W)")])
-
-        containerDelete = Container(
-            QtWidgets.QHBoxLayout(), margins=QtCore.QMargins(0, 0, 20, 0)
-        )
-        containerDelete.addWidgets([self._btnDeleteLabel, QtWidgets.QLabel("(Del)")])
-
-        containerColorPickers = Container(
-            QtWidgets.QHBoxLayout(), margins=QtCore.QMargins(0, 0, 20, 0)
-        )
-        containerDelete.addWidgets(
-            [self._selectedColorPicker, self._defaultColorPicker]
-        )
-
-        self._topToolbarContainer.layout().addWidget(containerNew)
-        self._topToolbarContainer.layout().addWidget(containerDelete)
-        self._topToolbarContainer.layout().addWidget(containerColorPickers)
-
-    def _initSelectorsContainer(self) -> None:
-        self._selectorsContainer = QtWidgets.QWidget()
-        self._selectorsContainer.setLayout(QtWidgets.QGridLayout())
-        self._selectorsContainer.layout().setSpacing(0)
-
-        spacer = QtWidgets.QWidget()
-        spacer.setMaximumHeight(60)
-
-        self._selectorsContainer.layout().addWidget(self._labelSelectorContainer, 0, 0)
-        self._selectorsContainer.layout().addWidget(spacer, 1, 0)
-        self._selectorsContainer.layout().addWidget(
-            self._imageSampleSelectorContainer, 2, 0
-        )
-        self._selectorsContainer.setMaximumWidth(250)
-
-    def _initLabelSelectorContainer(self) -> None:
-        self._labelSelectorContainer = QtWidgets.QWidget()
-        self._labelSelectorContainer.setLayout(QtWidgets.QGridLayout())
-        self._labelSelectorContainer.layout().setSpacing(0)
-        self._labelSelectorContainer.setMaximumWidth(250)
-
-        self._labelSelector = LabelSelectorTreeView(SharedValues().labelsDict)
-        self._labelSelector.setMaximumWidth(240)
-        self._labelSelector.clicked.connect(self.labelSelected_slot)
-        self._labelSelector.model.dataChanged.connect(self.labelChanged_slot)
-
-        self._btnNewLabel = QtWidgets.QPushButton("New")
-        self._btnNewLabel.clicked.connect(self.newLabel_slot)
-
-        self._btnDeleteLabel = QtWidgets.QPushButton("Delete")
-        self._btnDeleteLabel.clicked.connect(self.deleteLabel_slot)
-
-        self._labelSelectorContainer.layout().addWidget(
-            QtWidgets.QLabel("Labels:"), 0, 0
-        )
-        self._labelSelectorContainer.layout().addWidget(self._btnNewLabel, 1, 0)
-        self._labelSelectorContainer.layout().addWidget(self._btnDeleteLabel, 1, 1)
-        self._labelSelectorContainer.layout().addWidget(self._labelSelector, 2, 0, 1, 2)
-
-    def _initImageSampleSelectorContainer(self) -> None:
-        self._imageSampleSelectorContainer = QtWidgets.QWidget()
-        self._imageSampleSelectorContainer.setLayout(QtWidgets.QGridLayout())
-        self._imageSampleSelectorContainer.layout().setSpacing(0)
-        self._imageSampleSelectorContainer.setMaximumWidth(200)
-
-        self._imageSampleTreeView = ImageSampleTreeView(SharedValues().imageSamples)
-        self._imageSampleTreeView.loadSamples()
-        self._imageSampleTreeView.selectionModel().currentChanged.connect(
-            self.imageSampleChanged_slot
-        )
-
-        self._btnNextImageSample = QtWidgets.QPushButton("Next")
-        self._btnNextImageSample.clicked.connect(self.nextImageSample_slot)
-
-        self._btnPreviousImageSample = QtWidgets.QPushButton("Previous")
-        self._btnPreviousImageSample.clicked.connect(self.previousImageSample_slot)
-
-        self._imageSampleSelectorContainer.layout().addWidget(
-            QtWidgets.QLabel("Image samples:"), 0, 0
-        )
-        self._imageSampleSelectorContainer.layout().addWidget(
-            self._imageSampleTreeView, 1, 0, 1, 2
-        )
-
-        self._imageSampleSelectorContainer.layout().addWidget(
-            self._btnPreviousImageSample, 2, 0
-        )
-        self._imageSampleSelectorContainer.layout().addWidget(
-            self._btnNextImageSample, 2, 1
-        )
-
-        labelPrevious = QtWidgets.QLabel("(Ctrl+Q)")
-        labelPrevious.setContentsMargins(10, 0, 0, 0)
-        labelNext = QtWidgets.QLabel("(Ctrl+E)")
-        labelNext.setContentsMargins(10, 0, 0, 0)
-
-        self._imageSampleSelectorContainer.layout().addWidget(labelPrevious, 3, 0)
-        self._imageSampleSelectorContainer.layout().addWidget(labelNext, 3, 1)
-
-    def initShortcuts(self) -> None:
+    def setupShortcuts(self) -> None:
         """Initializes shortcuts"""
         self._shortcutNewLabel = QShortcut(QKeySequence("Ctrl+W"), self)
-        self._shortcutNewLabel.activated.connect(self.newImageLabelBox_slot)
+        self._shortcutNewLabel.activated.connect(self.imageLabelBoxNewClicked)
 
         self._shortcutDeleteLabel = QShortcut(QKeySequence("Del"), self)
-        self._shortcutDeleteLabel.activated.connect(self.deleteImageLabelBox_slot)
+        self._shortcutDeleteLabel.activated.connect(self.imageLabelBoxDeleteClicked)
 
         self._shortcutNextImageSample = QShortcut(QKeySequence("Ctrl+E"), self)
-        self._shortcutNextImageSample.activated.connect(self.nextImageSample_slot)
+        self._shortcutNextImageSample.activated.connect(self.nextImageSampleClicked)
 
         self._shortcutPreviousImageSample = QShortcut(QKeySequence("Ctrl+Q"), self)
         self._shortcutPreviousImageSample.activated.connect(
-            self.previousImageSample_slot
+            self.previousImageSampleClicked
         )
 
         self._autoDetectLabels = QShortcut(QKeySequence("Tab"), self)
-        self._autoDetectLabels.activated.connect(self.autoDetectLabels_slot)
+        self._autoDetectLabels.activated.connect(self.autoDetectLabelsClicked)
 
-    def _correctSceneAndView(self) -> None:
+    #######################################################
+    # Graphics scene and graphics view
+    #######################################################
+
+    def correctSceneAndView(self) -> None:
         """Corrects scale of `QGraphicsView` based on loaded `ImageSample`"""
-        self._view.resetTransform()
+        self.imageView.resetTransform()
 
-        wScale = self._view.rect().width() / self.currentImageSample.width
-        hScale = self._view.rect().height() / self.currentImageSample.height
+        wScale = self.imageView.rect().width() / self.currentImageSample.width
+        hScale = self.imageView.rect().height() / self.currentImageSample.height
 
         scale = min(wScale, hScale)
 
         SCALE_CONST = (
             0.02  # constant for zooming out move to get rid of sliders on sides
         )
-        self._view.scale(scale - SCALE_CONST, scale - SCALE_CONST)
+        self.imageView.scale(scale - SCALE_CONST, scale - SCALE_CONST)
 
-    def imageSampleChanged_slot(
-        self, current: QModelIndex, previous: QModelIndex
+    def loadImageSample(self) -> None:
+        """Loads `currentImageSample` image sample into current graphics scene and corrects size and zoom of screen"""
+        self.currentImageSample.load(
+            self.imageLabelBoxToolbar.selectedColorPicker.color,
+            self.imageLabelBoxToolbar.defaultColorPicker.color,
+        )
+
+        self._scene.clear()
+        self.imageView.resetZoom()
+        self.imageView.selectedItem = None
+
+        self._scene.setPixmap(self.currentImageSample.getQPixmap())
+        self._scene.setSceneRect(
+            0, 0, self.currentImageSample.width, self.currentImageSample.height
+        )
+
+        for imageLabelBox in self.currentImageSample.imageLabelBoxes:
+            self._scene.addItem(imageLabelBox)
+
+        self.correctSceneAndView()
+
+        # reset warning on image samples tree view
+        if self.currentImageSample is not None:
+            self.imageBrowser.treeView.checkImageSampleWarnings(
+                self.currentImageSample,
+                checkLabelBoxes=True,
+                checkImageLabelBoxes=False,
+            )
+
+    def graphicsItemClicked(self) -> None:
+        # reset warning on image samples tree view
+        if self.currentImageSample is not None:
+            self.imageBrowser.treeView.checkImageSampleWarnings(
+                self.currentImageSample,
+                checkLabelBoxes=False,
+                checkImageLabelBoxes=True,
+            )
+        pass
+
+    def getCurrentImageSample(self) -> ImageSample | None:
+        return self.currentImageSample
+
+    #######################################################
+    # ImageLabelBox tool bar
+    #######################################################
+
+    @Slot()
+    def imageLabelBoxNewClicked(self) -> None:
+        """Create new `ImageLabelBox` and add it to the `ImageSample`"""
+        if self.currentImageSample is None:
+            return
+
+        defaultW, defaultH = 100, 200
+        defaultLabelIndex, defaultLabelName = -1, "default"
+        defaultX, defaultY = (
+            self._scene.sceneRect().width() / 2,
+            self._scene.sceneRect().height() / 2,
+        )
+
+        if self.classLabelsBrowser.treeView.currIndex is not None:
+            defaultLabelIndex = self.classLabelsBrowser.treeView.currIndex
+            defaultLabelName = SharedValues().labelsDict[defaultLabelIndex].name
+
+        globalPosition = self.imageView.mapFromGlobal(QCursor.pos())
+        scenePosition = self.imageView.mapToScene(globalPosition)
+
+        if pointInRectangle(scenePosition, self._scene.sceneRect()):
+            defaultX, defaultY = scenePosition.x(), scenePosition.y()
+
+        newLabelBox = ImageLabelBox(
+            Box(defaultX, defaultY, defaultW, defaultH),
+            defaultLabelIndex,
+            defaultLabelName,
+            self.screenScaleText,
+            self.currentImageSample.rect(),
+            self.imageLabelBoxToolbar.selectedColorPicker.color,
+            self.imageLabelBoxToolbar.defaultColorPicker.color,
+        )
+
+        self.currentImageSample.add(newLabelBox)
+        self._scene.addItem(newLabelBox)
+
+        if self.imageView.selectedItem is not None:
+            self.imageView.selectedItem.setSelected(False)
+        self.imageView.selectedItem = newLabelBox
+        self.imageView.selectedItem.setSelected(True)
+
+    @Slot()
+    def imageLabelBoxDeleteClicked(self) -> None:
+        """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
+        if self.imageView.selectedItem is not None:
+            self.currentImageSample.remove(self.imageView.selectedItem)
+            self._scene.removeItem(self.imageView.selectedItem)
+        self.imageView.selectedItem = None
+
+    @Slot()
+    def updateImageLabelBoxColors(self) -> None:
+        if self.currentImageSample is None:
+            return
+
+        for imageLabelBox in self.currentImageSample.imageLabelBoxes:
+            imageLabelBox.updateColors(
+                defaultColor=self.imageLabelBoxToolbar.defaultColorPicker.color,
+                selectedColor=self.imageLabelBoxToolbar.selectedColorPicker.color,
+            )
+
+    #######################################################
+    # Class Label Browser
+    #######################################################
+
+    @Slot()
+    def classLabelsChanged(self, index: QModelIndex):
+        """Slot called when label from `classLabelsBrowser.treeView` was changed"""
+
+        self.classLabelsBrowser.treeView.selectLabel(index)
+
+        if self.currentImageSample is not None:
+            selectedLabelBox: ImageLabelBox | None = self.imageView.selectedItem
+
+            if selectedLabelBox is not None:
+                model = index.model()
+                row = index.row()
+                value = int(model.index(row, 0).data())
+                labelEntry: LabelEntry = SharedValues().labelsDict[value]
+                selectedLabelBox.setLabel(labelEntry.index, labelEntry.name)
+
+            # reset warning on image samples tree view
+            if self.currentImageSample is not None:  # type: ignore
+                self.imageBrowser.treeView.checkImageSampleWarnings(
+                    self.currentImageSample,
+                    checkLabelBoxes=False,
+                    checkImageLabelBoxes=True,
+                )
+
+    @Slot(QModelIndex, QModelIndex, list)
+    def classLabelsEdited(
+        self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]
     ) -> None:
+        """Slot called when label was edited"""
+        for row in range(topLeft.row(), bottomRight.row() + 1):
+            if topLeft != bottomRight:
+                raise Exception("Shouldn't happen")
+
+            name = self.classLabelsBrowser.treeView.model.index(row, 1).data()
+
+            SharedValues().labelsDict[row] = LabelEntry(name, row)
+            self.currentImageSample.reloadImageLabels()
+
+    @Slot()
+    def classLabelsNewEntry(self) -> None:
+        """Creates new `LabelEntry` into global dictionary of labels"""
+        index = len(SharedValues().labelsDict)
+        SharedValues().labelsDict[index] = LabelEntry("new", index)
+        self.classLabelsBrowser.treeView.loadLabels()
+
+    @Slot()
+    def classLabelsDeleteEntry(self) -> None:
+        """Deletes label from global list of labels, all keys will be moved down"""
+        if self.classLabelsBrowser.treeView.currIndex is None:
+            return
+
+        # TODO: Add warning!
+        index = self.classLabelsBrowser.treeView.currIndex
+        SharedValues().labelsDict.pop(index)
+
+        keys = list(SharedValues().labelsDict.keys())
+
+        maxKey = 0
+        for key in keys:
+            if key > index:
+                oldValues: LabelEntry = SharedValues().labelsDict[key]
+                SharedValues().labelsDict[key - 1] = LabelEntry(
+                    oldValues.name, oldValues.index
+                )
+                maxKey = max(key, maxKey)
+
+        if len(SharedValues().labelsDict) > 0:
+            SharedValues().labelsDict.pop(maxKey)
+
+        for imageSample in SharedValues().imageSamples:
+            for labelBox in imageSample.labelBoxes:
+                if labelBox.label == index:
+                    labelBox.label = -1
+                elif labelBox.label > index:
+                    labelBox.label = labelBox.label - 1
+
+        if self.currentImageSample is not None:
+            for imageLabelBox in self.currentImageSample.imageLabelBoxes:
+                if imageLabelBox.label == index:
+                    imageLabelBox.setLabel(-1, "default")
+                elif imageLabelBox.label > index:
+                    imageLabelBox.label = imageLabelBox.label - 1
+
+        self.classLabelsBrowser.treeView.loadLabels()
+
+    #######################################################
+    # Image Sample Browser
+    #######################################################
+
+    @Slot(QModelIndex, QModelIndex)
+    def imageSampleChanged(self, current: QModelIndex, previous: QModelIndex) -> None:
         """Slot called when `ImageSample`from QTreeView dataset was changed"""
         if self.currentImageSample is not None:
             self.currentImageSample.unload(save=True)
@@ -259,200 +342,39 @@ class DataLabeler(AbstractTabWidget):
         self.currentImageSample = newCurrentImageSample
 
         if oldImageSample is not None:
-            self._imageSampleTreeView.checkImageSampleWarnings(
+            self.imageBrowser.treeView.checkImageSampleWarnings(
                 oldImageSample, checkLabelBoxes=True, checkImageLabelBoxes=False
             )
         self.loadImageSample()
 
-    def loadImageSample(self) -> None:
-        """Loads `currentImageSample` image sample into current graphics scene and corrects size and zoom of screen"""
-        self.currentImageSample.load(
-            self._selectedColorPicker.color, self._defaultColorPicker.color
-        )
-
-        self._scene.clear()
-        self._view.resetZoom()
-        self._view.selectedItem = None
-
-        self._scene.setPixmap(self.currentImageSample.getQPixmap())
-        self._scene.setSceneRect(
-            0, 0, self.currentImageSample.width, self.currentImageSample.height
-        )
-
-        for imageLabelBox in self.currentImageSample.imageLabelBoxes:
-            self._scene.addItem(imageLabelBox)
-
-        self._correctSceneAndView()
-
-        # reset warning on image samples tree view
-        if self.currentImageSample is not None:
-            self._imageSampleTreeView.checkImageSampleWarnings(
-                self.currentImageSample,
-                checkLabelBoxes=True,
-                checkImageLabelBoxes=False,
-            )
-
     @Slot()
-    def labelSelected_slot(self, index: QModelIndex):
-        """Slot called when label from `_labelSelector` was changed"""
-
-        self._labelSelector.selectLabel(index)
-
-        if self.currentImageSample is not None:
-            selectedLabelBox: ImageLabelBox | None = self._view.selectedItem
-
-            if selectedLabelBox is not None:
-                model = index.model()
-                row = index.row()
-                value = int(model.index(row, 0).data())
-                labelEntry: LabelEntry = SharedValues().labelsDict[value]
-                selectedLabelBox.setLabel(labelEntry.index, labelEntry.name)
-
-            # reset warning on image samples tree view
-            if self.currentImageSample is not None:  # type: ignore
-                self._imageSampleTreeView.checkImageSampleWarnings(
-                    self.currentImageSample,
-                    checkLabelBoxes=False,
-                    checkImageLabelBoxes=True,
-                )
-
-    @Slot()
-    def labelChanged_slot(
-        self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]
-    ) -> None:
-        """Slot called when label was edited"""
-        for row in range(topLeft.row(), bottomRight.row() + 1):
-            if topLeft != bottomRight:
-                raise Exception("Shouldn't happen")
-
-            name = self._labelSelector.model.index(row, 1).data()
-            # shortcut = self._labelSelector.model.index(row, 2).data()
-
-            SharedValues().labelsDict[row] = LabelEntry(name, row, None)
-            # SharedValues().labelsDict[row] = LabelEntry(name, row, shortcut) # TODO: add shortcut support
-
-            self.currentImageSample.reloadImageLabels()
-
-    @Slot()
-    def newImageLabelBox_slot(self) -> None:
-        """Create new `ImageLabelBox` and add it to the `ImageSample`"""
+    def nextImageSampleClicked(self) -> None:
         if self.currentImageSample is None:
             return
 
-        defaultW, defaultH = 100, 200
-        defaultLabelIndex, defaultLabelName = -1, "default"
-        defaultX, defaultY = (
-            self._scene.sceneRect().width() / 2,
-            self._scene.sceneRect().height() / 2,
-        )
-
-        if self._labelSelector.currIndex is not None:
-            defaultLabelIndex = self._labelSelector.currIndex
-            defaultLabelName = SharedValues().labelsDict[defaultLabelIndex].name
-
-        globalPosition = self._view.mapFromGlobal(QCursor.pos())
-        scenePosition = self._view.mapToScene(globalPosition)
-
-        if pointInRectangle(scenePosition, self._scene.sceneRect()):
-            defaultX, defaultY = scenePosition.x(), scenePosition.y()
-
-        newLabelBox = ImageLabelBox(
-            QRectF(defaultX, defaultY, defaultW, defaultH),
-            defaultLabelIndex,
-            defaultLabelName,
-            self.screenScaleText,
-            self.currentImageSample.rect(),
-            self._selectedColorPicker.color,
-            self._defaultColorPicker.color,
-        )
-
-        self.currentImageSample.add(newLabelBox)
-        self._scene.addItem(newLabelBox)
-
-        if self._view.selectedItem is not None:
-            self._view.selectedItem.setSelected(False)
-        self._view.selectedItem = newLabelBox
-        self._view.selectedItem.setSelected(True)
-
-    @Slot()
-    def deleteImageLabelBox_slot(self) -> None:
-        """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
-        if self._view.selectedItem is not None:
-            self.currentImageSample.remove(self._view.selectedItem)
-            self._scene.removeItem(self._view.selectedItem)
-        self._view.selectedItem = None
-
-    @Slot()
-    def newLabel_slot(self) -> None:
-        """Creates new `LabelEntry` into global dictionary of labels"""
-        index = len(SharedValues().labelsDict)
-        SharedValues().labelsDict[index] = LabelEntry("new", index, None)
-        self._labelSelector.loadLabels()
-
-    @Slot()
-    def deleteLabel_slot(self) -> None:
-        """Deletes label from global list of labels, all keys will be moved down"""
-        if self._labelSelector.currIndex is None:
-            return
-
-        # TODO: Add warning!
-        index = self._labelSelector.currIndex
-        SharedValues().labelsDict.pop(index)
-
-        keys = list(SharedValues().labelsDict.keys())
-
-        maxKey = 0
-        for key in keys:
-            if key > index:
-                oldValues: LabelEntry = SharedValues().labelsDict[key]
-                SharedValues().labelsDict[key - 1] = LabelEntry(
-                    oldValues.name, oldValues.index, oldValues.shortcut
-                )
-                maxKey = max(key, maxKey)
-
-        if len(SharedValues().labelsDict) > 0:
-            SharedValues().labelsDict.pop(maxKey)
-
-        for imageSample in SharedValues().imageSamples:
-            for labelBox in imageSample.labelBoxes:
-                if labelBox.label == index:
-                    labelBox.label = -1
-                elif labelBox.label > index:
-                    labelBox.label = labelBox.label - 1
-
-        if self.currentImageSample is not None:
-            for imageLabelBox in self.currentImageSample.imageLabelBoxes:
-                if imageLabelBox.label == index:
-                    imageLabelBox.setLabel(-1, "default")
-                elif imageLabelBox.label > index:
-                    imageLabelBox.label = imageLabelBox.label - 1
-
-        self._labelSelector.loadLabels()
-
-    @Slot()
-    def nextImageSample_slot(self) -> None:
-        if self.currentImageSample is None:
-            return
-
-        currentIndex = self._imageSampleTreeView.currentIndex()
-        nextIndex = self._imageSampleTreeView.indexBelow(currentIndex)
+        currentIndex = self.imageBrowser.treeView.currentIndex()
+        nextIndex = self.imageBrowser.treeView.indexBelow(currentIndex)
         if nextIndex.isValid():
-            self._imageSampleTreeView.setCurrentIndex(nextIndex)
+            self.imageBrowser.treeView.setCurrentIndex(nextIndex)
 
     @Slot()
-    def previousImageSample_slot(self) -> None:
+    def previousImageSampleClicked(self) -> None:
         if self.currentImageSample is None:
             return
 
-        currentIndex = self._imageSampleTreeView.currentIndex()
-        previousIndex = self._imageSampleTreeView.indexAbove(currentIndex)
+        currentIndex = self.imageBrowser.treeView.currentIndex()
+        previousIndex = self.imageBrowser.treeView.indexAbove(currentIndex)
         if previousIndex.isValid():
-            self._imageSampleTreeView.setCurrentIndex(previousIndex)
+            self.imageBrowser.treeView.setCurrentIndex(previousIndex)
+
+    #######################################################
+    # Automatic Detection Toolbar
+    #######################################################
 
     @Slot()
-    def autoDetectLabels_slot(self) -> None:
+    def autoDetectLabelsClicked(self) -> None:
         if self.imageAnalyzer is None:
-            self._btnAutoDetect.setEnabled(False)
+            self.autoDetectToolbar.btnAutoDetect.setEnabled(False)
             return
         else:
             if self.currentImageSample is None:
@@ -466,26 +388,26 @@ class DataLabeler(AbstractTabWidget):
 
             for det in detections:
                 box = ImageLabelBox(
-                    QRectF(det.xCenter, det.yCenter, det.width, det.height),
+                    Box(det.xCenter, det.yCenter, det.width, det.height),
                     det.classIndex,
                     SharedValues().labelsDict[det.classIndex].name,
                     self.screenScaleText,
                     self.currentImageSample.rect(),
-                    self._selectedColorPicker.color,
-                    self._defaultColorPicker.color,
+                    self.imageLabelBoxToolbar.selectedColorPicker.color,
+                    self.imageLabelBoxToolbar.defaultColorPicker.color,
                 )
 
                 self.currentImageSample.add(box)
                 self._scene.addItem(box)
 
     @Slot()
-    def loadModel_slot(self) -> None:
+    def loadModelClicked(self) -> None:
         EXPECTED_MODEL_SIZE = 640
 
-        if self._textEditModelPath.text() != "":
-            self._btnAutoDetect.setEnabled(True)
+        if self.autoDetectToolbar.textEditModelPath.text() != "":
+            self.autoDetectToolbar.btnAutoDetect.setEnabled(True)
             self.imageAnalyzer = ImageAnalyzer(
-                self._textEditModelPath.text(),
+                self.autoDetectToolbar.textEditModelPath.text(),
                 EXPECTED_MODEL_SIZE,
                 (114, 114, 114),
                 0.6,
@@ -493,13 +415,17 @@ class DataLabeler(AbstractTabWidget):
             )
 
     @Slot()
-    def openModel_slot(self) -> None:
+    def openModelClicked(self) -> None:
         """Open OS dialog window to choose a directory from which a dataset will be imported"""
         fileName, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "Select a model", "", "ONNX models (*.onnx)"
         )
         if fileName:
-            self._textEditModelPath.setText(fileName)
+            self.autoDetectToolbar.textEditModelPath.setText(fileName)
+
+    #######################################################
+    # Other
+    #######################################################
 
     def screenScaleText(self) -> float:
         """Returns maximum width or height of windows. Used for scaling different UI elements"""
@@ -508,35 +434,12 @@ class DataLabeler(AbstractTabWidget):
             SharedValues().screen.geometry().height() * 0.03,
         )
 
-    def onGraphicsItemClickSlot(self) -> None:
-        # reset warning on image samples tree view
-        if self.currentImageSample is not None:
-            self._imageSampleTreeView.checkImageSampleWarnings(
-                self.currentImageSample,
-                checkLabelBoxes=False,
-                checkImageLabelBoxes=True,
-            )
-        pass
-
-    def _updateImageLabelBoxesColors(self) -> None:
-        if self.currentImageSample is None:
-            return
-
-        for imageLabelBox in self.currentImageSample.imageLabelBoxes:
-            imageLabelBox.updateColors(
-                defaultColor=self._defaultColorPicker.color,
-                selectedColor=self._selectedColorPicker.color,
-            )
-
-    def getCurrentImageSample(self) -> ImageSample | None:
-        return self.currentImageSample
-
     def tabSelected(self) -> None:
         """Slot called on change of tabs"""
-        self._imageSampleTreeView.loadSamples(restoreVerticalPosition=True)
-        self._labelSelector.loadLabels()
+        self.imageBrowser.treeView.loadSamples(restoreVerticalPosition=True)
+        self.classLabelsBrowser.treeView.loadLabels()
 
-        self._view.selectedItem = None
+        self.imageView.selectedItem = None
         if self.currentImageSample is not None:
             self.loadImageSample()
 
