@@ -102,7 +102,7 @@ class ModelTrainer(AbstractTabWidget):
     def generateModelPath(self) -> None:
         if self.settings.datasetPathTextEdit.text() == "":
             QtWidgets.QMessageBox.warning(
-                self, "Select dataset path for generating model output path"
+                self, "Warning", "Select dataset path for generating model output path"
             )
         else:
             path = Path(os.getcwd()) / "models"
@@ -189,6 +189,32 @@ class ModelTrainer(AbstractTabWidget):
     def errorExit(self, text: str) -> None:
         QtWidgets.QMessageBox.critical(self, "Error occurred during training", text)
         self.trainingEnded()
+
+    #######################################################
+    # Settings
+    #######################################################
+
+    def loadSettings(self):
+        settings = SharedValues().settings.training
+        self.modelSelector.selector.setCurrentIndex(settings.model)
+
+        self.settings.batchSpinBox.setValue(settings.batchSize)
+        self.settings.workerSpinBox.setValue(settings.numberOfWorkers)
+        self.settings.epochsSpinBox.setValue(settings.numberOfEpochs)
+
+        self.settings.modelPathTextEdit.setText(settings.modelOutputPath)
+        self.settings.modelNameTextEdit.setText(settings.modelName)
+
+    def updateSettings(self):
+        settings = SharedValues().settings.training
+        settings.model = self.modelSelector.selector.currentIndex()
+
+        settings.batchSize = self.settings.batchSpinBox.value()
+        settings.numberOfWorkers = self.settings.workerSpinBox.value()
+        settings.numberOfEpochs = self.settings.epochsSpinBox.value()
+
+        settings.modelOutputPath = self.settings.modelPathTextEdit.text()
+        settings.modelName = self.settings.modelNameTextEdit.text()
 
     #######################################################
     # Other

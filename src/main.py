@@ -21,23 +21,23 @@ from app.widgets import *
 from app.utils import *
 from app.training import *
 from app.activities import *
+from app.settings import *
 
 ##############################################################################
 
 
 class MyWindow(QtWidgets.QMainWindow):
-    def __init__(self, qtApp: QtWidgets.QApplication):
+    def __init__(self, qtApp: QtWidgets.QApplication) -> None:
         super().__init__()
         self.qtApp = qtApp
 
         SharedValues().screen = self.qtApp.primaryScreen()
-        SharedValues().filterPresets = getDefaultFilterPresets()
         self.lastIndex: int | None = None
 
         self.initWindow()
         self._initUI()
 
-    def initWindow(self):
+    def initWindow(self) -> None:
         screenWidth, screenHeight = (
             SharedValues().screen.geometry().width(),
             SharedValues().screen.geometry().height(),
@@ -55,7 +55,7 @@ class MyWindow(QtWidgets.QMainWindow):
             int(windowHeight),
         )
 
-    def _initUI(self):
+    def _initUI(self) -> None:
         self.mainUI = QtWidgets.QTabWidget()
         self.dataLabelerWidget = DataLabeler()
         self.datasetWidget = DatasetLoader(
@@ -74,9 +74,14 @@ class MyWindow(QtWidgets.QMainWindow):
         self.mainUI.currentChanged.connect(self.tabChanged)
         self.setCentralWidget(self.mainUI)
 
+        self.loadSettings()
+        self.datasetWidget.loadSettings()
+        self.dataLabelerWidget.loadSettings()
+        self.modelTrainerWidget.loadSettings()
+
         self.showMaximized()
 
-    def tabChanged(self, index: int):
+    def tabChanged(self, index: int) -> None:
         if self.lastIndex is not None:
             tab = self.mainUI.widget(self.lastIndex)
             if isinstance(tab, AbstractTabWidget):
@@ -87,14 +92,40 @@ class MyWindow(QtWidgets.QMainWindow):
         if isinstance(tab, AbstractTabWidget):
             tab.tabSelected()
 
-    def setTabsEnabled(self, value: bool):
+    def setTabsEnabled(self, value: bool) -> None:
         for i in range(0, self.mainUI.count()):
             if i == self.mainUI.currentIndex():
                 continue
             self.mainUI.setTabEnabled(i, value)
 
-    def closeEvent(self, event: QCloseEvent):
+    def loadSettings(self) -> None:
+        try:
+            with open(r"settings.json", "r", encoding="utf-8") as f:
+                SharedValues().settings = AppSettings.from_json(f.read())  # type: ignore
+        except:
+            with open(
+                r"src/app/settings/default_settings.json", "r", encoding="utf-8"
+            ) as f:
+                SharedValues().settings = AppSettings.from_json(f.read())  # type: ignore
+
+        SharedValues().filterPresets = SharedValues().settings.syntheticSettings.filters
+
+    def saveSettings(self) -> None:
+
+        self.datasetWidget.updateSettings()
+        self.dataLabelerWidget.updateSettings()
+        SharedValues().settings.syntheticSettings.filters = SharedValues().filterPresets
+        self.modelTrainerWidget.updateSettings()
+
+        jsonStr = SharedValues().settings.to_json(indent=4)  # type: ignore
+        with open("settings.json", "w", encoding="utf-8") as f:
+            f.write(jsonStr)  # type: ignore
+
+    def closeEvent(self, event: QCloseEvent) -> None:
         self.modelTrainerWidget.destroyTrainers()
+
+        self.saveSettings()
+
         return super().closeEvent(event)
 
 

@@ -52,7 +52,7 @@ class Settings(QtWidgets.QWidget):
         modelNameGenerateBtn = QtWidgets.QPushButton("Generate")
         modelNameGenerateBtn.clicked.connect(self.generateModelName)
 
-        labelDatasetPath = QtWidgets.QLabel("Dataset path")
+        labelDatasetPath = QtWidgets.QLabel("Dataset path:")
         labelDatasetPath.setSizePolicy(
             QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum
         )

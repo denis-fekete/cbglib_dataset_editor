@@ -8,7 +8,7 @@ Description:
 """
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, QModelIndex
+from PySide6.QtCore import Signal, QModelIndex, Slot
 from PySide6.QtWidgets import QSizePolicy
 
 from app.synthetic.FilterPresetTreeView import FilterPresetTreeView
@@ -17,7 +17,7 @@ from app.utils import *
 
 class FilterBrowser(QtWidgets.QWidget):
     filterSelected = Signal(QModelIndex)
-    filterChanged = Signal(QModelIndex, QModelIndex)
+    filterChanged = Signal(QModelIndex, QModelIndex, list)
     newFilter = Signal()
     deleteFilter = Signal()
 
@@ -30,7 +30,7 @@ class FilterBrowser(QtWidgets.QWidget):
 
         self.selector = FilterPresetTreeView(SharedValues().filterPresets)
         self.selector.clicked.connect(self.filterSelected)
-        self.selector.model.dataChanged.connect(self.filterChanged)
+        self.selector.model.dataChanged.connect(self._onModelDataChanged)
 
         newLabelBtn = QtWidgets.QPushButton("New")
         newLabelBtn.clicked.connect(self.newFilter)
@@ -42,3 +42,10 @@ class FilterBrowser(QtWidgets.QWidget):
         self.layout().addWidget(newLabelBtn, 1, 0)
         self.layout().addWidget(deleteLabelBtn, 1, 1)
         self.layout().addWidget(self.selector, 2, 0, 1, 2)
+
+    @Slot(QModelIndex, QModelIndex, list)
+    def _onModelDataChanged(
+        self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]
+    ):
+        # WORK-AROUND : on compilation time QList cannot be converted to python list
+        self.filterChanged.emit(topLeft, bottomRight, roles)

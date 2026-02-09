@@ -18,6 +18,7 @@ from typing import Callable
 from app.widgets import *
 from app.dataset import *
 from app.labeling import *
+from app.settings import *
 from app.utils.SharedValues import SharedValues
 from .datasetLoaderWidgets.ExportToolbar import ExportToolbar
 from .datasetLoaderWidgets.ImportToolbar import ImportToolbar
@@ -45,6 +46,7 @@ class DatasetLoader(AbstractTabWidget):
 
         self.importToolbar = ImportToolbar()
         self.importToolbar.importDialog.connect(self.openImportDialog)
+        self.importToolbar.importClicked.connect(self.importDataset)
         self.importToolbar.importPathChanged.connect(self.importPathChanged)
 
         self.exportToolbar = ExportToolbar()
@@ -80,8 +82,14 @@ class DatasetLoader(AbstractTabWidget):
     def importPathChanged(self, text: str) -> None:
         SharedValues().datasetImportPath = text
 
+    @Slot()
     def importDataset(self) -> None:
-        """Loads `ImageDataset` from"""
+        """Loads `ImageDataset` from `self.importToolbar.importPathTextEdit`"""
+        path = Path(self.importToolbar.importPathTextEdit.text())
+        if self.importToolbar.importPathTextEdit.text() == "" or not path.is_dir():
+            QtWidgets.QMessageBox.warning(
+                self, "Warning", "Not a valid path for import dataset."
+            )
 
         SharedValues().imageSamples.clear()
         self.imageDataset.loadImageSamples(
@@ -208,6 +216,35 @@ class DatasetLoader(AbstractTabWidget):
         self.setParentEnabled_fn(False)
 
         self.workerThread.start()
+
+    #######################################################
+    # Settings
+    #######################################################
+
+    def loadSettings(self):
+        settings = SharedValues().settings.dataset
+        self.exportToolbar.trainDataPercentageSpinBox.setValue(
+            min(settings.trainDataPercent, 100)
+        )
+
+        self.exportToolbar.applyFiltersCheckBox.setChecked(settings.generateSynthetic)
+        self.exportToolbar.generateNameCheckBox.setChecked(settings.generateNames)
+        self.exportToolbar.separateByClassesCheckBox.setChecked(
+            settings.separateToSubdirectories
+        )
+        self.importToolbar.importPathTextEdit.setText(settings.importPath)
+
+    def updateSettings(self):
+        settings = SharedValues().settings.dataset
+        settings.separateToSubdirectories = (
+            self.exportToolbar.separateByClassesCheckBox.isChecked()
+        )
+        settings.generateNames = self.exportToolbar.generateNameCheckBox.isChecked()
+        settings.generateSynthetic = self.exportToolbar.applyFiltersCheckBox.isChecked()
+        settings.trainDataPercent = (
+            self.exportToolbar.trainDataPercentageSpinBox.value()
+        )
+        settings.importPath = self.importToolbar.importPathTextEdit.text()
 
     #######################################################
     # Other

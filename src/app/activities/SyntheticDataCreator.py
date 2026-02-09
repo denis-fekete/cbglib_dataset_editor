@@ -29,7 +29,11 @@ class SyntheticDataCreator(AbstractTabWidget):
         self.imageSampleGetter_fn = imageSampleGetter_fn
         self.imageSample: ImageSample | None = None
         self.syntheticImage: SyntheticImage = SyntheticImage(self.loadSceneImage)
-        self.syntheticImage.filter = SharedValues().filterPresets[0]
+        self.syntheticImage.filter = (
+            SharedValues().filterPresets[0]
+            if (len(SharedValues().filterPresets) > 0)
+            else FilterPreset()
+        )
 
         self._initUI()
 
@@ -40,7 +44,7 @@ class SyntheticDataCreator(AbstractTabWidget):
         self.view = ZoomGraphicsView(self.scene)
 
         self.filterSettings = FilterSettings()
-        self.filterSettings.blurChanged.connect(self.updateSettingsTexts)
+        self.filterSettings.blurChanged.connect(self.syntheticImage.blurChanged)
         self.filterSettings.saturationChanged.connect(
             self.syntheticImage.saturationChanged
         )
@@ -54,7 +58,7 @@ class SyntheticDataCreator(AbstractTabWidget):
         self.filterSettings.gaussianNoiseChanged.connect(
             self.syntheticImage.gaussianChanged
         )
-        self.filterSettings.updateTexts.connect(self.update)
+        self.filterSettings.updateTexts.connect(self.updateSettingsTexts)
         self.filterSettings.applyFilters.connect(self.syntheticImage.applyFilter)
         self.updateSettingsTexts()
         self.updateFilterValues()
@@ -119,7 +123,7 @@ class SyntheticDataCreator(AbstractTabWidget):
     def newFilter(self) -> None:
         """Creates new `FilterPreset` into global dictionary of filters"""
         SharedValues().filterPresets.append(FilterPreset())
-        self.filterBrowser.selector.loadLabels()
+        self.filterBrowser.selector.loadFilters()
 
     @Slot()
     def deleteFilter(self) -> None:
@@ -128,7 +132,7 @@ class SyntheticDataCreator(AbstractTabWidget):
         if index is None:
             return
         SharedValues().filterPresets.pop(index)
-        self.filterBrowser.selector.loadLabels()
+        self.filterBrowser.selector.loadFilters()
 
     def filterSelected(self, index: QModelIndex) -> None:
         """Slot called when label from `_filterSelector` was changed"""
@@ -181,7 +185,8 @@ class SyntheticDataCreator(AbstractTabWidget):
         self.correctSceneAndView()
 
     def tabSelected(self) -> None:
-        """Loads current image selected in `DataLabeler` activity"""
+        self.filterBrowser.selector.loadFilters()
+
         imageSample = self.imageSampleGetter_fn()
         if imageSample is None:
             return

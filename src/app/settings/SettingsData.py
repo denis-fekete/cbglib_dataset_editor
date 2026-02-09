@@ -1,0 +1,60 @@
+"""
+Module: SettingsData.py
+Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
+Created: 2026-02-02
+
+Description:
+    Data class object containing saved settings values.
+"""
+
+from dataclasses import dataclass
+from dataclasses_json import dataclass_json
+from app.synthetic import FilterPreset
+
+
+@dataclass_json
+@dataclass
+class DatasetSettings:
+    generateNames: bool
+    separateToSubdirectories: bool
+    generateSynthetic: bool
+    trainDataPercent: int
+    importPath: str
+
+
+@dataclass_json
+@dataclass
+class LabelingSettings:
+    selectedColorRed: int
+    selectedColorGreen: int
+    selectedColorBlue: int
+    defaultColorRed: int
+    defaultColorGreen: int
+    defaultColorBlue: int
+    modelPath: str
+
+
+@dataclass_json
+@dataclass
+class TrainingSettings:
+    model: int
+    numberOfWorkers: int
+    numberOfEpochs: int
+    batchSize: int
+    modelOutputPath: str
+    modelName: str
+
+
+@dataclass_json
+@dataclass
+class SyntheticSettings:
+    filters: list[FilterPreset]
+
+
+@dataclass_json
+@dataclass
+class AppSettings:
+    dataset: DatasetSettings
+    labeling: LabelingSettings
+    training: TrainingSettings
+    syntheticSettings: SyntheticSettings

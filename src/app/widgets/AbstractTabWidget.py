@@ -19,3 +19,9 @@ class AbstractTabWidget(QWidget):
 
     def tabClosed(self) -> None:
         pass
+
+    def updateSettings(self) -> None:
+        pass
+
+    def loadSettings(self) -> None:
+        pass

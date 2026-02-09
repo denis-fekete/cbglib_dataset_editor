@@ -9,9 +9,10 @@ Description:
 
 from PySide6.QtGui import QScreen
 
-from ..labeling.ImageSample import ImageSample
-from ..labeling.LabelEntry import LabelEntry
-from ..synthetic.FilterPreset import FilterPreset
+from app.labeling.ImageSample import ImageSample
+from app.labeling.LabelEntry import LabelEntry
+from app.synthetic.FilterPreset import FilterPreset
+from app.settings import *
 
 
 class SharedValues:
@@ -31,6 +32,7 @@ class SharedValues:
         self.imageSamples: list[ImageSample] = []
         self.filterPresets: list[FilterPreset] = []
         self.labelsDict: dict[int, LabelEntry] = {}
-        self.screen: QScreen | None = None
+        self.screen: QScreen
+        self.settings: AppSettings
 
         self._initialized = True

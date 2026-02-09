@@ -1,0 +1,107 @@
+{
+    "dataset": {
+        "generateNames": true,
+        "separateToSubdirectories": true,
+        "generateSynthetic": false,
+        "trainDataPercent": 80,
+        "importPath": ""
+    },
+    "labeling": {
+        "selectedColorRed": 0,
+        "selectedColorGreen": 255,
+        "selectedColorBlue": 0,
+        "defaultColorRed": 40,
+        "defaultColorGreen": 40,
+        "defaultColorBlue": 40,
+        "modelPath": ""
+    },
+    "training": {
+        "model": 0,
+        "numberOfWorkers": 4,
+        "numberOfEpochs": 50,
+        "batchSize": 8,
+        "modelOutputPath": "",
+        "modelName": ""
+    },
+    "syntheticSettings": {
+        "filters": [
+            {
+                "name": "Default 1",
+                "blur": 5,
+                "sapNoise": 0,
+                "gaussianNoise": 0,
+                "saturation": 105,
+                "contrast": 80,
+                "brightness": -20,
+                "hFlip": true,
+                "vFlip": false
+            },
+            {
+                "name": "Default 2",
+                "blur": 7,
+                "sapNoise": 0,
+                "gaussianNoise": 0,
+                "saturation": 95,
+                "contrast": 90,
+                "brightness": -10,
+                "hFlip": false,
+                "vFlip": true
+            },
+            {
+                "name": "Default 3",
+                "blur": 15,
+                "sapNoise": 0,
+                "gaussianNoise": 0,
+                "saturation": 120,
+                "contrast": 110,
+                "brightness": -5,
+                "hFlip": true,
+                "vFlip": true
+            },
+            {
+                "name": "Default 4",
+                "blur": 0,
+                "sapNoise": 2,
+                "gaussianNoise": 0,
+                "saturation": 115,
+                "contrast": 95,
+                "brightness": 2,
+                "hFlip": false,
+                "vFlip": false
+            },
+            {
+                "name": "Default 5",
+                "blur": 0,
+                "sapNoise": 1,
+                "gaussianNoise": 0,
+                "saturation": 100,
+                "contrast": 105,
+                "brightness": 5,
+                "hFlip": true,
+                "vFlip": false
+            },
+            {
+                "name": "Default 6",
+                "blur": 0,
+                "sapNoise": 0,
+                "gaussianNoise": 15,
+                "saturation": 85,
+                "contrast": 95,
+                "brightness": 15,
+                "hFlip": true,
+                "vFlip": false
+            },
+            {
+                "name": "Default 7",
+                "blur": 0,
+                "sapNoise": 0,
+                "gaussianNoise": 10,
+                "saturation": 90,
+                "contrast": 90,
+                "brightness": 10,
+                "hFlip": true,
+                "vFlip": true
+            }
+        ]
+    }
+}

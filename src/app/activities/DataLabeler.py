@@ -10,7 +10,7 @@ Description:
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QModelIndex, Slot
-from PySide6.QtGui import QBrush, QShortcut, QKeySequence, QCursor
+from PySide6.QtGui import QBrush, QShortcut, QKeySequence, QCursor, QColor
 
 from app.widgets import *
 from app.utils import *
@@ -422,6 +422,46 @@ class DataLabeler(AbstractTabWidget):
         )
         if fileName:
             self.autoDetectToolbar.textEditModelPath.setText(fileName)
+
+    #######################################################
+    # Settings
+    #######################################################
+
+    def loadSettings(self):
+        settings = SharedValues().settings.labeling
+        defaultColor = QColor(
+            settings.defaultColorRed,
+            settings.defaultColorGreen,
+            settings.defaultColorBlue,
+        )
+        self.imageLabelBoxToolbar.defaultColorPicker.color = defaultColor
+        self.imageLabelBoxToolbar.defaultColorPicker.updateBackgroundColor()
+
+        selectedColor = QColor(
+            settings.selectedColorRed,
+            settings.selectedColorGreen,
+            settings.selectedColorBlue,
+        )
+        self.imageLabelBoxToolbar.selectedColorPicker.color = selectedColor
+        self.imageLabelBoxToolbar.selectedColorPicker.updateBackgroundColor()
+
+        self.imageLabelBoxToolbar.updateColors.emit()
+
+        self.autoDetectToolbar.textEditModelPath.setText(settings.modelPath)
+
+    def updateSettings(self):
+        settings = SharedValues().settings.labeling
+        defaultColor = self.imageLabelBoxToolbar.defaultColorPicker.color
+        settings.defaultColorRed = defaultColor.red()
+        settings.defaultColorGreen = defaultColor.green()
+        settings.defaultColorBlue = defaultColor.blue()
+
+        selectedColor = self.imageLabelBoxToolbar.selectedColorPicker.color
+        settings.selectedColorRed = selectedColor.red()
+        settings.selectedColorGreen = selectedColor.green()
+        settings.selectedColorBlue = selectedColor.blue()
+
+        settings.modelPath = self.autoDetectToolbar.textEditModelPath.text()
 
     #######################################################
     # Other

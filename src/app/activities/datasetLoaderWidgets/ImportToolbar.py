@@ -18,6 +18,7 @@ from app.utils import SharedValues
 class ImportToolbar(QtWidgets.QWidget):
     importPathChanged = Signal(str)
     importDialog = Signal()
+    importClicked = Signal()
 
     def __init__(self):
         super().__init__()
@@ -33,12 +34,16 @@ class ImportToolbar(QtWidgets.QWidget):
         self.importPathTextEdit = QtWidgets.QLineEdit()
         self.importPathTextEdit.textChanged.connect(self.importPathChanged)
 
-        self.btnImportDialog = QtWidgets.QPushButton("Import")
+        self.btnImportDialog = QtWidgets.QPushButton("Open")
         self.btnImportDialog.clicked.connect(self.importDialog)
+
+        self.btnImport = QtWidgets.QPushButton("Import")
+        self.btnImport.clicked.connect(self.importClicked)
 
         self.treeView = ImageSampleTreeView(SharedValues().imageSamples)
 
         self.layout().addWidget(importPathLabel, 0, 0, 1, 2)
         self.layout().addWidget(self.importPathTextEdit, 1, 0)
         self.layout().addWidget(self.btnImportDialog, 1, 1)
-        self.layout().addWidget(self.treeView, 2, 0, 1, 2)
+        self.layout().addWidget(self.btnImport, 1, 2)
+        self.layout().addWidget(self.treeView, 2, 0, 1, 3)

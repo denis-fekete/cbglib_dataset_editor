@@ -22,7 +22,7 @@ class ColorPicker(QtWidgets.QPushButton):
         self.clicked.connect(self.onClicked_slot)
         self.color = defaultColor
         self.callback_fn = callback_fn
-        self._updateBackgroundColor()
+        self.updateBackgroundColor()
 
     def onClicked_slot(self) -> None:
         color = QtWidgets.QColorDialog.getColor(self.color)
@@ -30,10 +30,10 @@ class ColorPicker(QtWidgets.QPushButton):
         if color.isValid():
             self.color = color
 
-        self._updateBackgroundColor()
+        self.updateBackgroundColor()
 
         if self.callback_fn is not None:
             self.callback_fn()
 
-    def _updateBackgroundColor(self) -> None:
+    def updateBackgroundColor(self) -> None:
         self.setStyleSheet(f"background-color: {self.color.name()}")
