@@ -70,58 +70,63 @@ class ImageSample:
         self.width: float = 0
         self.height: float = 0
         self._lastModified: datetime | None = None
+        self._loaded = False
 
-    def _loadImageAndLabel(self, skipLabel: bool = False) -> None:
+    def _loadImageAndLabel(
+        self, skipLabel: bool = False, skipImage: bool = False
+    ) -> None:
         """
         Opens image and its label file from `imagePath` and `labelPath`. Dimensions of image are
         stored in internal list of `LabelBoxes` `_labelBoxes`. Checks for existence of both files.
         If image does not exist an exception is raised. For non existing label file no exception is raised.
         """
-        imgPath = Path(self.rootPath) / self.imagePath / (self.name + self.imageExt)
-        if imgPath.is_file():
-            self.cvImage = cv.imread(imgPath.resolve()._str)  # type: ignore
-            self.height, self.width = self.cvImage.shape[:2]  # type: ignore
-        else:
-            raise Exception(f"Error: Image file does not exist: {imgPath}")
 
-        if skipLabel or self.labelPath is None or self.labelExt is None:
-            return
+        if not skipImage:
+            imgPath = Path(self.rootPath) / self.imagePath / (self.name + self.imageExt)
+            if imgPath.is_file():
+                self.cvImage = cv.imread(imgPath.resolve()._str)  # type: ignore
+                self.height, self.width = self.cvImage.shape[:2]  # type: ignore
+            else:
+                raise Exception(f"Error: Image file does not exist: {imgPath}")
 
-        lblPath = Path(self.rootPath) / self.labelPath / (self.name + self.labelExt)
-        if lblPath.is_file():
-            lastModified = datetime.fromtimestamp(lblPath.stat().st_mtime)
+        if not skipLabel and self.labelPath is not None and self.labelExt is not None:
+            lblPath = Path(self.rootPath) / self.labelPath / (self.name + self.labelExt)
+            if lblPath.is_file():
+                lastModified = datetime.fromtimestamp(lblPath.stat().st_mtime)
 
-            if self._lastModified is not None and lastModified < self._lastModified:
-                return
+                if self._lastModified is not None and lastModified < self._lastModified:
+                    return
 
-            try:
-                with open(lblPath, "r") as f:
-                    lines = f.readlines()
+                try:
+                    with open(lblPath, "r") as f:
+                        lines = f.readlines()
 
-                self.labelBoxes.clear()
+                    self.labelBoxes.clear()
 
-                for line in lines:
-                    parsed = [float(x) for x in line.split(" ")]
-                    label = int(parsed[0])
-                    x = parsed[1]
-                    y = parsed[2]
-                    w = parsed[3]
-                    h = parsed[4]
+                    for line in lines:
+                        parsed = [float(x) for x in line.split(" ")]
+                        label = int(parsed[0])
+                        x = parsed[1]
+                        y = parsed[2]
+                        w = parsed[3]
+                        h = parsed[4]
 
-                    x, y, w, h = Norm2Pixels(x, y, w, h, self.width, self.height)
-                    self.labelBoxes.append(LabelBox(x, y, w, h, label))
-            except:
-                raise Exception(
-                    f"Error: Label image exists but cannot be read: {lblPath}"
-                )
+                        x, y, w, h = Norm2Pixels(x, y, w, h, self.width, self.height)
+                        self.labelBoxes.append(LabelBox(x, y, w, h, label))
+                except:
+                    raise Exception(
+                        f"Error: Label image exists but cannot be read: {lblPath}"
+                    )
 
     def load(self, selectedColor: QColor, defaultColor: QColor) -> None:
         """
         Loads internal list of `LabelBox` objects into the list of `ImageLabelBox` objects.
         """
+        if self._loaded:
+            return
+
         self._loadImageAndLabel(skipLabel=False)
 
-        print(f"Loading ImageSample: {self.name}:")
         if len(self.imageLabelBoxes) == 0:
             for label in self.labelBoxes:
 
@@ -140,15 +145,19 @@ class ImageSample:
                 )
                 self.imageLabelBoxes.append(newLabel)
 
+        self._loaded = True
+
     def unload(self, save: bool = False) -> None:
         """
         Unloads list of graphical items (`ImageLabelBox`), if `save` is set to `True` the changes
         will be stored in internal `_labelBoxes` and can later be stored into label file for this image.
         """
+        if not self._loaded:
+            return
+
         if save:
             self.labelBoxes.clear()
 
-            print(f"Unloading ImageSample: {self.name}:")
             for imageLabelBox in self.imageLabelBoxes:
                 rect = imageLabelBox.rect()
                 self.labelBoxes.append(
@@ -164,6 +173,7 @@ class ImageSample:
 
         self.imageLabelBoxes.clear()
         self.cvImage = None
+        self._loaded = False
 
     def save(
         self,

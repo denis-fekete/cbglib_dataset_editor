@@ -76,7 +76,7 @@ class Settings(QtWidgets.QWidget):
         subSettingsContainer.setLayout(QtWidgets.QGridLayout())
         subSettingsContainer.layout().addWidget(self.settingsLabel, 0, 0)
         subSettingsContainer.layout().addWidget(
-            QtWidgets.QLabel("Number of workers (0 = single worker):"), 1, 0
+            QtWidgets.QLabel("Number of additional workers (0 = single worker):"), 1, 0
         )
         subSettingsContainer.layout().addWidget(self.workerSpinBox, 1, 1, 1, 2)
 

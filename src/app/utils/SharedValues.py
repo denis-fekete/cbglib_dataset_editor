@@ -13,6 +13,7 @@ from app.labeling.ImageSample import ImageSample
 from app.labeling.LabelEntry import LabelEntry
 from app.synthetic.FilterPreset import FilterPreset
 from app.settings import *
+from app.utils.DatasetStatistics import DatasetStatistics
 
 
 class SharedValues:
@@ -34,5 +35,6 @@ class SharedValues:
         self.labelsDict: dict[int, LabelEntry] = {}
         self.screen: QScreen
         self.settings: AppSettings
+        self.statistics = DatasetStatistics()
 
         self._initialized = True

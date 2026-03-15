@@ -26,7 +26,7 @@ import numpy as np
 from .LetterboxInfo import LetterboxInfo
 
 
-class ONNXModel:
+class ONNXDetector:
     def __init__(self, modelPath: str) -> None:
         providers = [
             "CPUExecutionProvider",

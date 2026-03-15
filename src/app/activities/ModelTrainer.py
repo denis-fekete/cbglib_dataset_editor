@@ -32,7 +32,7 @@ class ModelTrainer(AbstractTabWidget):
         self.pathValidated: bool = False
         self.setTabsEnabled_fn = setTabsEnabled_fn
         self.trainerThread: QtCore.QThread | None = None
-        self.currentModelTrainer: YoloUltralyticsTrainer | None = None
+        self.currentModelTrainer: AbstractModelTrainer | None = None
         self._initUI()
 
     def _initUI(self) -> None:
@@ -78,20 +78,21 @@ class ModelTrainer(AbstractTabWidget):
 
     @Slot()
     def validateDataset(self) -> None:
-        if self.modelSelector.selector.currentIndex() == YOLO_V8_MODEL_INDEX:
-            if self.currentModelTrainer is None:
-                self.currentModelTrainer = YoloUltralyticsTrainer()
+        self._getCorrectModel(self.modelSelector.selector.currentIndex())
 
-            isValid, message = self.currentModelTrainer.validateDataset(
-                self.settings.datasetPathTextEdit.text()
-            )
+        if self.currentModelTrainer is None:
+            return
 
-            if not isValid:
-                self.settings.startTrainingBtn.setEnabled(False)
-                QtWidgets.QMessageBox.critical(self, "Dataset is not correct", message)
-                return
-            else:
-                self.settings.startTrainingBtn.setEnabled(True)
+        isValid, message = self.currentModelTrainer.validateDataset(
+            self.settings.datasetPathTextEdit.text()
+        )
+
+        if not isValid:
+            self.settings.startTrainingBtn.setEnabled(False)
+            QtWidgets.QMessageBox.critical(self, "Dataset is not correct", message)
+            return
+        else:
+            self.settings.startTrainingBtn.setEnabled(True)
 
     @Slot()
     def generateModelName(self) -> None:
@@ -181,7 +182,7 @@ class ModelTrainer(AbstractTabWidget):
         self.modelOutput.statusTextEdit.setPlainText(
             self.modelOutput.statusTextEdit.toPlainText() + "\n" + text
         )
-        self._statusTextEdit.moveCursor(QTextCursor.End)  # type: ignore
+        self.modelOutput.statusTextEdit.moveCursor(QTextCursor.End)  # type: ignore
 
     def showError(self, text: str) -> None:
         QtWidgets.QMessageBox.critical(self, "Training error", text)
@@ -220,9 +221,23 @@ class ModelTrainer(AbstractTabWidget):
     # Other
     #######################################################
 
+    def _getCorrectModel(self, index: int):
+        if index == YOLO_V8_N_MODEL_INDEX:
+            self.currentModelTrainer = YoloUltralyticsTrainerV8n()
+        elif index == YOLO_V8_M_MODEL_INDEX:
+            self.currentModelTrainer = YoloUltralyticsTrainerV8m()
+        elif index == YOLO_V11_N_MODEL_INDEX:
+            self.currentModelTrainer = YoloUltralyticsTrainerV11n()
+        elif index == YOLO_V11_M_MODEL_INDEX:
+            self.currentModelTrainer = None
+        elif index == YOLO_V26_N_MODEL_INDEX:
+            self.currentModelTrainer = YoloUltralyticsTrainerV26n()
+        elif index == FASTER_RCNN_MODEL_INDEX:
+            self.currentModelTrainer = None
+
     @Slot(int)
     def modelChanged(self, index: int) -> None:
-        self.settings.settingsLabel.setText(f"Settings for {MODELS[index]}:")
+        self.settings.settingsLabel.setText(f"Settings for {MODELS_NAMES[index]}:")
 
     def tabSelected(self) -> None:
         pass

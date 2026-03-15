@@ -14,34 +14,22 @@ Description:
     Class derived from `AbstractModelTrainer` that implements methods for Ultralytics Yolo model.
 """
 
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Slot
 
 from pathlib import Path
 
-from ultralytics import YOLO  # type: ignore
 from ultralytics.data.utils import check_det_dataset
 
 from .AbstractModelTrainer import AbstractModelTrainer
 
 
-class YoloUltralyticsTrainer(AbstractModelTrainer):
-    progress = Signal(int)
-    status = Signal(str)
-    error = Signal(str)
-    errorExit = Signal(str)
-    finished = Signal()
-
-    def __init__(self) -> None:
+class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
+    def __init__(self, model) -> None:
         super().__init__()
 
-        self.connectedToThread: bool = False
-        self.epochs: int | None = None
-        self.workers: int | None = None
-        self.batch: int | None = None
         self._validated: bool = False
-        self.modelPath: str | None = None
-        self.modelName: str | None = None
         self.dataYaml: str | None = None
+        self.model = model
 
     @Slot()
     def run(self) -> None:
@@ -66,13 +54,11 @@ class YoloUltralyticsTrainer(AbstractModelTrainer):
 
         self.status.emit("Initializing ultralytics...")
         try:
-            model = YOLO("yolov8n.pt")
+            self.model.add_callback("on_train_epoch_end", self._epochCallback)  # type: ignore
+            self.model.add_callback("on_train_start", self._trainStartCallback)  # type: ignore
+            self.model.add_callback("on_train_end", self._trainEndCallback)  # type: ignore
 
-            model.add_callback("on_train_epoch_end", self._epochCallback)  # type: ignore
-            model.add_callback("on_train_start", self._trainStartCallback)  # type: ignore
-            model.add_callback("on_train_end", self._trainEndCallback)  # type: ignore
-
-            model.train(  # type: ignore
+            self.model.train(  # type: ignore
                 data=self.dataYaml,
                 epochs=self.epochs,
                 imgsz=640,
@@ -82,7 +68,7 @@ class YoloUltralyticsTrainer(AbstractModelTrainer):
                 name=self.modelName,
             )
 
-            model.export(format="onnx")
+            self.model.export(format="onnx")
 
             self.finished.emit()
 

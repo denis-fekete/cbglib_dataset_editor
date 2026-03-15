@@ -7,14 +7,22 @@ Description:
     Values for GUI.
 """
 
-YOLO_V8_MODEL_INDEX = 0
-YOLO_V11_MODEL_INDEX = 1
-FASTER_RCNN_MODEL_INDEX = 2
-MODELS = {
-    0: "Yolo V8 (Ultralytics)",
-    1: "Yolo V11 (Ultralytics)",
-    2: "Faster RCNN",
+YOLO_V8_N_MODEL_INDEX = 0
+YOLO_V8_M_MODEL_INDEX = 1
+YOLO_V11_N_MODEL_INDEX = 2
+YOLO_V11_M_MODEL_INDEX = 3
+YOLO_V26_N_MODEL_INDEX = 4
+FASTER_RCNN_MODEL_INDEX = 5
+
+MODELS_NAMES = {
+    YOLO_V8_N_MODEL_INDEX: "Yolo V8 N (Ultralytics)",
+    YOLO_V8_M_MODEL_INDEX: "Yolo V8 M (Ultralytics)",
+    YOLO_V11_N_MODEL_INDEX: "Yolo V11 N (Ultralytics)",
+    YOLO_V11_M_MODEL_INDEX: "Yolo V11 M (Ultralytics)",
+    YOLO_V26_N_MODEL_INDEX: "Yolo V26 N (Ultralytics)",
+    FASTER_RCNN_MODEL_INDEX: "Faster RCNN",
 }
+
 
 DATASET_PATHS = {
     0: "Dataset export path",

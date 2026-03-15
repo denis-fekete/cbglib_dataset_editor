@@ -36,7 +36,7 @@ class ExportToolbar(QtWidgets.QWidget):
         self.btnExport = QtWidgets.QPushButton("Start Export")
         self.btnExport.clicked.connect(self.exportClicked)
 
-        self.applyFiltersCheckBox = QtWidgets.QCheckBox("Apply filters")
+        self.applyFiltersCheckBox = QtWidgets.QCheckBox("Generate synthetic data")
         self.applyFiltersCheckBox.setChecked(True)
 
         self.generateNameCheckBox = QtWidgets.QCheckBox("Generate name from class")

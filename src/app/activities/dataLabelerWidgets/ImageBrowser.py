@@ -10,7 +10,7 @@ Description:
 
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal
-from PySide6.QtCore import QModelIndex
+from PySide6.QtCore import QItemSelection
 
 from app.utils import SharedValues
 from app.widgets import ImageSampleTreeView
@@ -19,7 +19,7 @@ from app.widgets import ImageSampleTreeView
 class ImageBrowser(QtWidgets.QWidget):
     nextImage = Signal()
     previousImage = Signal()
-    imageSampleChanged = Signal(QModelIndex, QModelIndex)
+    imageSampleChanged = Signal(QItemSelection, QItemSelection)
 
     def __init__(self):
         super().__init__()
@@ -30,7 +30,7 @@ class ImageBrowser(QtWidgets.QWidget):
 
         self.treeView = ImageSampleTreeView(SharedValues().imageSamples)
         self.treeView.loadSamples()
-        self.treeView.selectionModel().currentChanged.connect(self.imageSampleChanged)
+        self.treeView.selectionModel().selectionChanged.connect(self.imageSampleChanged)
 
         btnNextImageSample = QtWidgets.QPushButton("Next")
         btnNextImageSample.clicked.connect(self.nextImage)
@@ -38,9 +38,9 @@ class ImageBrowser(QtWidgets.QWidget):
         btnPreviousImageSample = QtWidgets.QPushButton("Previous")
         btnPreviousImageSample.clicked.connect(self.previousImage)
 
-        labelPrevious = QtWidgets.QLabel("(Ctrl+Q)")
+        labelPrevious = QtWidgets.QLabel(" ( Q ) ")
         labelPrevious.setContentsMargins(10, 0, 0, 0)
-        labelNext = QtWidgets.QLabel("(Ctrl+E)")
+        labelNext = QtWidgets.QLabel(" ( E ) ")
         labelNext.setContentsMargins(10, 0, 0, 0)
 
         self.layout().addWidget(QtWidgets.QLabel("Image samples:"), 0, 0)

@@ -8,7 +8,7 @@ Description:
 """
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QMargins
 
 from app.widgets import *
 
@@ -31,6 +31,11 @@ class AutoDetectToolbar(QtWidgets.QWidget):
         self.btnAutoDetect.clicked.connect(self.autoDetect)
         self.btnAutoDetect.setEnabled(False)
 
+        containerDetect = Container(
+            QtWidgets.QHBoxLayout(), margins=QMargins(0, 0, 20, 0)
+        )
+        containerDetect.addWidgets([self.btnAutoDetect, QtWidgets.QLabel(" ( Tab ) ")])
+
         self.textEditModelPath = QtWidgets.QLineEdit()
 
         btnOpenModel = QtWidgets.QPushButton("Open")
@@ -44,7 +49,7 @@ class AutoDetectToolbar(QtWidgets.QWidget):
         container = Container(QtWidgets.QHBoxLayout(), maxHeight=20)
         container.addWidgets([QtWidgets.QLabel("Model path:"), self.textEditModelPath])
 
-        self.layout().addWidget(self.btnAutoDetect)
+        self.layout().addWidget(containerDetect)
         self.layout().addWidget(container)
         self.layout().addWidget(btnOpenModel)
         self.layout().addWidget(btnLoadModel)

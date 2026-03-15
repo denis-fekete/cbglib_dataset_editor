@@ -7,12 +7,12 @@
         "importPath": ""
     },
     "labeling": {
-        "selectedColorRed": 0,
+        "selectedColorRed": 158,
         "selectedColorGreen": 255,
-        "selectedColorBlue": 0,
-        "defaultColorRed": 40,
-        "defaultColorGreen": 40,
-        "defaultColorBlue": 40,
+        "selectedColorBlue": 151,
+        "defaultColorRed": 20,
+        "defaultColorGreen": 20,
+        "defaultColorBlue": 20,
         "modelPath": ""
     },
     "training": {

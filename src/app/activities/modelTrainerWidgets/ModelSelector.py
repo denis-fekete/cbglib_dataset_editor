@@ -22,8 +22,8 @@ class ModelSelector(QtWidgets.QWidget):
         self.setLayout(QtWidgets.QGridLayout())
 
         self.selector = QtWidgets.QComboBox()
-        for i in range(0, len(MODELS)):
-            self.selector.addItem(MODELS[i])
+        for i in range(0, len(MODELS_NAMES)):
+            self.selector.addItem(MODELS_NAMES[i])
 
         self.selector.currentIndexChanged.connect(self.modelChanged)
 

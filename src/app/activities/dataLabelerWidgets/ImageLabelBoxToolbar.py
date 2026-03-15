@@ -47,12 +47,12 @@ class ImageLabelBoxToolbar(QtWidgets.QWidget):
         self.defaultColorPicker.setMaximumWidth(50)
 
         containerNew = Container(QtWidgets.QHBoxLayout(), margins=QMargins(0, 0, 20, 0))
-        containerNew.addWidgets([btnNewLabel, QtWidgets.QLabel("(Ctrl+W)")])
+        containerNew.addWidgets([btnNewLabel, QtWidgets.QLabel(" ( Space ) ")])
 
         containerDelete = Container(
             QtWidgets.QHBoxLayout(), margins=QMargins(0, 0, 20, 0)
         )
-        containerDelete.addWidgets([btnDeleteLabel, QtWidgets.QLabel("(Del)")])
+        containerDelete.addWidgets([btnDeleteLabel, QtWidgets.QLabel(" ( X ) ")])
 
         containerColorPickers = Container(
             QtWidgets.QHBoxLayout(), margins=QMargins(0, 0, 20, 0)

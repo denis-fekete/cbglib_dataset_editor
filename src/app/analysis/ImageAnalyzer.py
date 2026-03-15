@@ -13,7 +13,7 @@ import numpy as np
 from typing import Tuple
 from numpy.typing import NDArray
 
-from .ONNXModel import ONNXModel
+from .ONNXModel import ONNXDetector
 from .LetterboxInfo import LetterboxInfo
 from .Detection import Detection
 
@@ -48,7 +48,7 @@ class ImageAnalyzer:
         self.letterBoxInfo: LetterboxInfo | None = None
         self.confidenceThreshold = confidenceThreshold
         self.iouThreshold = iouThreshold
-        self.model = ONNXModel(self.modelPath)
+        self.model = ONNXDetector(self.modelPath)
 
     def analyze(self, image: cv.Mat) -> list[Detection]:
         """

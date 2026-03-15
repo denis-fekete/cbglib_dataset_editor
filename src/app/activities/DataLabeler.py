@@ -9,7 +9,7 @@ Description:
 """
 
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtCore import QModelIndex, Slot
+from PySide6.QtCore import QModelIndex, Slot, QItemSelection
 from PySide6.QtGui import QBrush, QShortcut, QKeySequence, QCursor, QColor
 
 from app.widgets import *
@@ -22,7 +22,7 @@ from app.labeling.ImageLabelBox import ImageLabelBox
 from app.labeling.pointInRectangle import pointInRectangle
 from app.labeling.LabelEntry import LabelEntry
 
-from .dataLabelerWidgets.ImageSampleBrowser import ImageBrowser
+from .dataLabelerWidgets.ImageBrowser import ImageBrowser
 from .dataLabelerWidgets.ClassLabelsBrowser import ClassLabelsBrowser
 from .dataLabelerWidgets.AutoDetectToolbar import AutoDetectToolbar
 from .dataLabelerWidgets.ImageLabelBoxToolbar import ImageLabelBoxToolbar
@@ -81,16 +81,16 @@ class DataLabeler(AbstractTabWidget):
 
     def setupShortcuts(self) -> None:
         """Initializes shortcuts"""
-        self._shortcutNewLabel = QShortcut(QKeySequence("Ctrl+W"), self)
+        self._shortcutNewLabel = QShortcut(QKeySequence("Space"), self)
         self._shortcutNewLabel.activated.connect(self.imageLabelBoxNewClicked)
 
-        self._shortcutDeleteLabel = QShortcut(QKeySequence("Del"), self)
+        self._shortcutDeleteLabel = QShortcut(QKeySequence("X"), self)
         self._shortcutDeleteLabel.activated.connect(self.imageLabelBoxDeleteClicked)
 
-        self._shortcutNextImageSample = QShortcut(QKeySequence("Ctrl+E"), self)
+        self._shortcutNextImageSample = QShortcut(QKeySequence("E"), self)
         self._shortcutNextImageSample.activated.connect(self.nextImageSampleClicked)
 
-        self._shortcutPreviousImageSample = QShortcut(QKeySequence("Ctrl+Q"), self)
+        self._shortcutPreviousImageSample = QShortcut(QKeySequence("Q"), self)
         self._shortcutPreviousImageSample.activated.connect(
             self.previousImageSampleClicked
         )
@@ -153,7 +153,6 @@ class DataLabeler(AbstractTabWidget):
                 checkLabelBoxes=False,
                 checkImageLabelBoxes=True,
             )
-        pass
 
     def getCurrentImageSample(self) -> ImageSample | None:
         return self.currentImageSample
@@ -206,9 +205,19 @@ class DataLabeler(AbstractTabWidget):
     @Slot()
     def imageLabelBoxDeleteClicked(self) -> None:
         """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
-        if self.imageView.selectedItem is not None:
+        if (
+            self.currentImageSample is not None
+            and self.imageView.selectedItem is not None
+        ):
             self.currentImageSample.remove(self.imageView.selectedItem)
             self._scene.removeItem(self.imageView.selectedItem)
+
+            self.imageBrowser.treeView.checkImageSampleWarnings(
+                self.currentImageSample,
+                checkLabelBoxes=False,
+                checkImageLabelBoxes=True,
+            )
+
         self.imageView.selectedItem = None
 
     @Slot()
@@ -315,16 +324,23 @@ class DataLabeler(AbstractTabWidget):
     # Image Sample Browser
     #######################################################
 
-    @Slot(QModelIndex, QModelIndex)
-    def imageSampleChanged(self, current: QModelIndex, previous: QModelIndex) -> None:
+    @Slot(QItemSelection, QItemSelection)
+    def imageSampleChanged(
+        self, current: QItemSelection, previous: QItemSelection
+    ) -> None:
         """Slot called when `ImageSample`from QTreeView dataset was changed"""
         if self.currentImageSample is not None:
             self.currentImageSample.unload(save=True)
 
-        if not current.isValid():
+        if not current.indexes():
             return
 
-        clickedItemName = current.data()
+        index = current.indexes()[0]
+
+        if not index.isValid():
+            return
+
+        clickedItemName = index.data()
         if clickedItemName is None:
             print("Error: clickedItemName was not found in datasetItemSelected_slot()")
             return
@@ -482,6 +498,10 @@ class DataLabeler(AbstractTabWidget):
         self.imageView.selectedItem = None
         if self.currentImageSample is not None:
             self.loadImageSample()
+
+    @Slot()
+    def clearCurrentImageSample(self):
+        self.currentImageSample = None
 
     def tabClosed(self) -> None:
         if self.currentImageSample is not None:

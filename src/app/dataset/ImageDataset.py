@@ -14,6 +14,8 @@ from typing import Callable
 
 from app.labeling.ImageSample import ImageSample, LabelEntry
 from .FileData import FileData
+from app.utils import SharedValues
+from app.utils.DatasetStatistics import DatasetStatistics
 
 
 class ImageDataset:
@@ -28,16 +30,20 @@ class ImageDataset:
         labelsDict: dict[int, LabelEntry],
     ) -> None:
         """Clears `imageSamples` and loads new from `SharedValues().datasetImportPath`"""
+        SharedValues().statistics = DatasetStatistics()
         self.dataYamlPath = None
 
         fileDataList: list[FileData] = self._loadFilesIntoList(rootPath)
 
         for item in fileDataList:
             if item.ext == ".jpg":
+                SharedValues().statistics.imageSamples += 1
+
                 matchedLabels: list[FileData] = []
                 for other in fileDataList:
                     if other.ext == ".txt" and other.name == item.name:
                         matchedLabels.append(other)
+                        SharedValues().statistics.labeledSamples += 1
 
                 if len(matchedLabels) > 1:
                     raise Exception(
@@ -71,6 +77,8 @@ class ImageDataset:
                     raise Exception(
                         "Error: Found multiple data.yaml files. Only one or none (will get created automatically) should be in dataset!"
                     )
+            elif item.ext == ".txt":
+                SharedValues().statistics.labelsFiles += 1
 
     def _loadFilesIntoList(self, rootPath: str) -> list[FileData]:
         """Returns list of dictionaries containing name, path and extension"""

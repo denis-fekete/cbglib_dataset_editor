@@ -8,7 +8,7 @@ Description:
 """
 
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, Signal
 
 import os
 from pathlib import Path
@@ -26,6 +26,8 @@ from .datasetLoaderWidgets.DatasetInfoToolbar import DatasetInfoToolbar
 
 
 class DatasetLoader(AbstractTabWidget):
+    onImport = Signal()
+
     def __init__(
         self,
         screenScaleText_fn: Callable[[], float],
@@ -55,6 +57,7 @@ class DatasetLoader(AbstractTabWidget):
         self.exportToolbar.exportPathChanged.connect(self.exportPathChanged)
 
         self.datasetInfoToolbar = DatasetInfoToolbar()
+        self.datasetInfoToolbar.calculateStatistics.connect(self.calculateStatistics)
 
         self.layout().addWidget(self.importToolbar, 0, 0)
         self.layout().addWidget(self.exportToolbar, 1, 0)
@@ -92,14 +95,20 @@ class DatasetLoader(AbstractTabWidget):
             )
 
         SharedValues().imageSamples.clear()
-        self.imageDataset.loadImageSamples(
-            SharedValues().datasetImportPath,
-            SharedValues().imageSamples,
-            SharedValues().labelsDict,
-        )
-        self.updateDataYaml()
+        self.onImport.emit()
 
-        self.importToolbar.treeView.loadSamplesFull()
+        try:
+            self.imageDataset.loadImageSamples(
+                SharedValues().datasetImportPath,
+                SharedValues().imageSamples,
+                SharedValues().labelsDict,
+            )
+
+            self.updateDataYaml()
+
+            self.importToolbar.treeView.loadSamplesFull()
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Error", e.__str__())
 
     #######################################################
     # Exporting dataset
@@ -245,6 +254,31 @@ class DatasetLoader(AbstractTabWidget):
             self.exportToolbar.trainDataPercentageSpinBox.value()
         )
         settings.importPath = self.importToolbar.importPathTextEdit.text()
+
+    #######################################################
+    # Statistics
+    #######################################################
+    @Slot()
+    def calculateStatistics(self):
+        sVals = SharedValues()
+
+        sVals.statistics.emptySamples = 0
+        sVals.statistics.labelBoxes = 0
+
+        for sample in SharedValues().imageSamples:
+            sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
+            boxes = len(sample.labelBoxes)
+
+            if boxes == 0:
+                sVals.statistics.emptySamples += 1
+            else:
+                sVals.statistics.labelBoxes += boxes
+
+        sVals.statistics.classes = len(SharedValues().labelsDict)
+        sVals.statistics.imageSamples = len(SharedValues().imageSamples)
+
+        self.datasetInfoToolbar.updateStatistics()
+        pass
 
     #######################################################
     # Other

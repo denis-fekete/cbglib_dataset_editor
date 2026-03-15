@@ -10,6 +10,7 @@ Description:
 """
 
 from PySide6 import QtWidgets
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QCloseEvent
 
 import sys
@@ -27,6 +28,8 @@ from app.settings import *
 
 
 class MyWindow(QtWidgets.QMainWindow):
+    clearCurrentImageSample = Signal()
+
     def __init__(self, qtApp: QtWidgets.QApplication) -> None:
         super().__init__()
         self.qtApp = qtApp
@@ -65,6 +68,10 @@ class MyWindow(QtWidgets.QMainWindow):
             self.dataLabelerWidget.getCurrentImageSample
         )
         self.modelTrainerWidget = ModelTrainer(self.setTabsEnabled)
+
+        self.datasetWidget.onImport.connect(
+            self.dataLabelerWidget.clearCurrentImageSample
+        )
 
         self.mainUI.addTab(self.datasetWidget, "Dataset")
         self.mainUI.addTab(self.dataLabelerWidget, "Image labeling")
