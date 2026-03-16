@@ -7,12 +7,13 @@ These models can be used by CBGLIB for android devices, which provides simplifie
 
 ## Installation
 ### Required:
-- Python
+- Python 3.10
+- Pip
 
 #### 1. Download git repository
 ```
-git clone https://github.com/denis-fekete/cbglib_dataset_editor
-cd cbglib_dataset_editor
+git clone https://github.com/denis-fekete/cv.ilibg-dataset-creator.git
+cd cv.ilibg-dataset-creator
 ```
 
 #### 2. Create python virtual environment (not mandatory but recommended)
@@ -28,8 +29,17 @@ Windows:
 
 #### 3. Install dependencies
 ```
+pip3 install .
+```
+or for development
+```
+pip3 install -e .
+```
+
+#### 3A. Install torchvision version that supports GPU, this might be different for users depending on their hardware capabilities
+```
 pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu129
-pip3 install -r requirements.txt
+
 ```
 
 #### 4. Run editor
