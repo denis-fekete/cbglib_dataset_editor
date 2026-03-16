@@ -1,10 +1,10 @@
 [project]
 name = "CV.ILIBG-Dataset-Creator"
 
-description = "Tool for image data annotation/labeling bundled with synthetic data generation and 
+description = """Tool for image data annotation/labeling bundled with synthetic data generation and 
 in-app model training for deep learning convolutional neural network models that use YOLO models. 
 This application is mainly a all-in-one solution for CV.ILIBG Kotlin library that requires trained 
-models"
+models"""
 
 keywords = ["data labeling", "labeling", "annotation", "synthetic data", "ultralytics", "qt", "opencv"]
 
@@ -25,7 +25,7 @@ requires-python = "== 3.10.8"
 
 dependencies = [
     "dataclasses_json==0.6.7",
-    "numpy==2.4.3",
+    "numpy==2.1.2",
     "onnxruntime==1.23.1",
     "onnxruntime_gpu==1.23.0",
     "opencv_contrib_python==4.12.0.88",
@@ -35,13 +35,16 @@ dependencies = [
     "pyside6_addons==6.10.0",
     "pyside6_essentials==6.10.0",
     "PyYAML==6.0.3",
-    "ultralytics==8.4.14"
+    "ultralytics==8.4.14",
     "torch",
     "torchvision"
 ]
 
 [project.scripts]
-run = "app.main:main"
+dataset-creator = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [build-system]
 requires = ["setuptools", "wheel"]

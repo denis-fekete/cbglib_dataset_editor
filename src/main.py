@@ -138,8 +138,12 @@ class MyWindow(QtWidgets.QMainWindow):
 
 ##############################################################################
 
-if __name__ == "__main__":
+def main():
     app = QtWidgets.QApplication(sys.argv)
     window = MyWindow(app)
     window.show()
     sys.exit(app.exec())
+
+# for direct python execution
+if __name__ == "__main__":
+    main()
