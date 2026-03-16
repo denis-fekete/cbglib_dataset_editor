@@ -24,3 +24,5 @@ models
 runs
 settings.json
 
+# other
+*_old.*
