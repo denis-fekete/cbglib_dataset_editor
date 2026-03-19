@@ -10,4 +10,3 @@ pyside6_addons==6.10.0
 pyside6_essentials==6.10.0
 PyYAML==6.0.3
 ultralytics==8.4.14
-torchvision==0.23.0+cu129

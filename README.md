@@ -35,14 +35,16 @@ or for development
 ```
 pip3 install -e .
 ```
-
-#### 3A. Install torchvision version that supports GPU, this might be different for users depending on their hardware capabilities
+#### 4. Install torch torchvision
 ```
-pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu129
-
+pip install torch torchvision 
+```
+Or, to use **GPU** for training, install a compatible version of torch and torchvison, for more details see (https://pytorch.org/get-started/locally/)[https://pytorch.org/get-started/locally/].
+```
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu129
 ```
 
-#### 4. Run editor
+#### 5. Open Dataset Creator
 ```
-python src/main.py
+dataset-creator
 ```
