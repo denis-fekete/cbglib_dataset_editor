@@ -105,6 +105,9 @@ class SyntheticImage:
 
                 f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
 
+    def unload(self) -> None:
+        self.cvImage = None
+
     def getCvImage(self) -> cv.Mat | None:
         if self.cvImage is None:
             self.updateReference()
@@ -177,7 +180,7 @@ class SyntheticImage:
         # start here
         if self.filter.sapNoise > 0:
             width, height = self.width(), self.height()
-            noisePixels = int(self.filter.sapNoise * (width * height / 100))
+            noisePixels = int((self.filter.sapNoise / 10.0) * (width * height / 100))
             noiseRows = np.random.randint(0, int(height) - 1, noisePixels)
             noiseCols = np.random.randint(0, int(width) - 1, noisePixels)
 
@@ -191,7 +194,7 @@ class SyntheticImage:
         if self.filter.gaussianNoise > 0:
             img = img.astype(np.float32)
             noiseMask = np.random.normal(  # type: ignore
-                0, self.filter.gaussianNoise, img.shape
+                0, self.filter.gaussianNoise / 10.0, img.shape
             ).astype(
                 np.float32
             )  # type: ignore

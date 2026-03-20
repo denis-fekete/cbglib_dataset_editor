@@ -8,32 +8,46 @@ Description:
 """
 
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtCore import QItemSelectionModel, QModelIndex, Qt
+from PySide6.QtCore import QItemSelectionModel, QModelIndex, Qt, Slot, Signal
 from PySide6.QtWidgets import QHeaderView
 
 from app.labeling import *
 
 
 class LabelSelectorTreeView(QtWidgets.QTreeView):
-    def __init__(self, labels: dict[int, LabelEntry]) -> None:
-        super().__init__()
-        self.labelsDict: dict[int, LabelEntry] = labels
+    labelsChanged = Signal(QModelIndex)
+    dataEdited = Signal(QModelIndex, QModelIndex, list)
+
+    def __init__(self, parent: QtWidgets.QWidget) -> None:
+        super().__init__(parent)
+        self._labelsDict: dict[int, LabelEntry] | None = None
         self.model: QtGui.QStandardItemModel = QtGui.QStandardItemModel()  # type: ignore
         self.currQIndex: QModelIndex | None = None
         self.currIndex: int | None = None
 
         self.setModel(self.model)
+        self.clicked.connect(self.labelsChanged)
+        self.model.dataChanged.connect(self._onModelDataChanged)
+
+    def setLabels(self, labelsDict: dict[int, LabelEntry]) -> None:
+        self._labelsDict = labelsDict
         self.loadLabels()
 
     def loadLabels(self) -> None:
         """Loads labels into the model and tree view"""
+        if self._labelsDict is None:
+            raise Exception(
+                "LabelSelectorTreeView: self._labelsDict was not set."
+                " Did you forget to call setLabels()?"
+            )
+
         self.model.clear()
         self.model.setHorizontalHeaderLabels(["#", "Name"])
 
         self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
 
-        for label in self.labelsDict.values():
+        for label in self._labelsDict.values():
             index = QtGui.QStandardItem(str(label.index))
             index.setFlags(index.flags() & ~Qt.ItemFlag.ItemIsEditable)
 
@@ -50,3 +64,10 @@ class LabelSelectorTreeView(QtWidgets.QTreeView):
         )
         self.currQIndex = index
         self.currIndex = index.row()
+
+    @Slot(QModelIndex, QModelIndex, list)
+    def _onModelDataChanged(
+        self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]
+    ):
+        # WORK-AROUND : on compilation time QList cannot be converted to python list
+        self.dataEdited.emit(topLeft, bottomRight, roles)

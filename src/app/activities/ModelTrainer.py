@@ -20,107 +20,107 @@ from app.widgets import *
 from app.dataset import *
 from app.utils import *
 from app.training import *
-from .modelTrainerWidgets.Settings import Settings
-from .modelTrainerWidgets.ModelSelector import ModelSelector
-from .modelTrainerWidgets.ModelOutput import ModelOutput
-from .modelTrainerWidgets.values import *
+
+from app.ui.ModelTrainer_ui import Ui_DataTrainerWidget
 
 
 class ModelTrainer(AbstractTabWidget):
     def __init__(self, setTabsEnabled_fn: Callable[[bool], None]) -> None:
         super().__init__()
+        self.ui = Ui_DataTrainerWidget()
+        self.ui.setupUi(self)  # type: ignore
+
         self.pathValidated: bool = False
         self.setTabsEnabled_fn = setTabsEnabled_fn
         self.trainerThread: QtCore.QThread | None = None
         self.currentModelTrainer: AbstractModelTrainer | None = None
-        self._initUI()
 
-    def _initUI(self) -> None:
-        self.setLayout(QtWidgets.QGridLayout())
+        self._connectUI()
 
+    def _connectUI(self) -> None:
         self.currentModelTrainer = None
 
-        self.modelSelector = ModelSelector()
-        self.modelSelector.modelChanged.connect(self.modelChanged)
+        self.ui.generateNameButton.clicked.connect(self.generateModelName)
+        self.ui.generateOutputDirectoryButton.clicked.connect(self.generateModelPath)
+        self.ui.validateButton.clicked.connect(self.validateDataset)
+        self.ui.startTrainingButton.clicked.connect(self.startTraining)
+        self.ui.datasetPathLineEdit.textChanged.connect(self.datasetPathEdited)
 
-        self.settings = Settings()
-        self.settings.generateModelPath.connect(self.generateModelPath)
-        self.settings.generateModelName.connect(self.generateModelName)
-        self.settings.datasetPathEdited.connect(self.datasetPathEdited)
-        self.settings.datasetPathChanged.connect(self.datasetPathChanged)
-        self.settings.validateDataset.connect(self.validateDataset)
-        self.settings.startTraining.connect(self.startTraining)
+        for i in range(0, len(DATASET_PATHS)):
+            self.ui.datasetPathComboBox.addItem(DATASET_PATHS[i])
 
-        self.modelOutput = ModelOutput()
+        self.ui.datasetPathComboBox.currentIndexChanged.connect(
+            self.datasetComboBoxChanged
+        )
 
-        self.layout().addWidget(self.modelSelector, 0, 0)
-        self.layout().addWidget(self.settings, 1, 0)
-        self.layout().addWidget(self.modelOutput, 2, 0)
+        for i in range(0, len(MODELS_NAMES)):
+            self.ui.modelSelectorComboBox.addItem(MODELS_NAMES[i])
 
     #######################################################
     # Settings
     #######################################################
 
     @Slot(int)
-    def datasetPathChanged(self, index: int) -> None:
+    def datasetComboBoxChanged(self, index: int) -> None:
         if index == 0:  # dataset export path
-            self.settings.datasetPathTextEdit.setText(SharedValues().datasetExportPath)
+            self.ui.datasetPathLineEdit.setText(SharedValues().datasetExportPath)
         elif index == 1:
-            self.settings.datasetPathTextEdit.setText(SharedValues().datasetImportPath)
+            self.ui.datasetPathLineEdit.setText(SharedValues().datasetImportPath)
 
         self.pathValidated = False
-        self.settings.startTrainingBtn.setEnabled(False)
+        self.ui.startTrainingButton.setEnabled(False)
 
     @Slot(str)
     def datasetPathEdited(self, text: str) -> None:
         self.pathValidated = False
-        self.settings.startTrainingBtn.setEnabled(False)
+        self.ui.startTrainingButton.setEnabled(False)
 
     @Slot()
     def validateDataset(self) -> None:
-        self._getCorrectModel(self.modelSelector.selector.currentIndex())
+        self._getCorrectModel(self.ui.modelSelectorComboBox.currentIndex())
 
         if self.currentModelTrainer is None:
             return
 
         isValid, message = self.currentModelTrainer.validateDataset(
-            self.settings.datasetPathTextEdit.text()
+            self.ui.datasetPathLineEdit.text()
         )
 
         if not isValid:
-            self.settings.startTrainingBtn.setEnabled(False)
+            self.ui.startTrainingButton.setEnabled(False)
             QtWidgets.QMessageBox.critical(self, "Dataset is not correct", message)
             return
         else:
-            self.settings.startTrainingBtn.setEnabled(True)
+            self.ui.startTrainingButton.setEnabled(True)
 
     @Slot()
     def generateModelName(self) -> None:
         timestamp = datetime.now().strftime("%Y_%m_%d")
-        self.settings.modelNameTextEdit.setText(f"project_{timestamp}_ver")
+        self.ui.modelNameLineEdit.setText(f"project_{timestamp}_ver")
 
     @Slot()
     def generateModelPath(self) -> None:
-        if self.settings.datasetPathTextEdit.text() == "":
+        if self.ui.datasetPathLineEdit.text() == "":
             QtWidgets.QMessageBox.warning(
-                self, "Warning", "Select dataset path for generating model output path"
+                self,
+                "Warning",
+                "Select 'Dataset path' for generating 'Model output root directory path'",
             )
         else:
             path = Path(os.getcwd()) / "models"
-            self.settings.modelPathTextEdit.setText(path.resolve()._str)
+            self.ui.modelOutputPathLineEdit.setText(path.resolve()._str)
 
     @Slot()
     def startTraining(self) -> None:
         if self.currentModelTrainer is not None:
             self.setTabsEnabled_fn(False)
-            self.modelSelector.setEnabled(False)
-            self.settings.setEnabled(False)
+            self.ui.modelSettingsWidget.setEnabled(False)
 
-            self.currentModelTrainer.epochs = self.settings.epochsSpinBox.value()
-            self.currentModelTrainer.workers = self.settings.workerSpinBox.value()
-            self.currentModelTrainer.batch = self.settings.batchSpinBox.value()
-            self.currentModelTrainer.modelPath = self.settings.modelPathTextEdit.text()
-            self.currentModelTrainer.modelName = self.settings.modelNameTextEdit.text()
+            self.currentModelTrainer.epochs = self.ui.epochsSpinBox.value()
+            self.currentModelTrainer.workers = self.ui.workersSpinBox.value()
+            self.currentModelTrainer.batch = self.ui.batchSpinBox.value()
+            self.currentModelTrainer.modelPath = self.ui.modelOutputPathLineEdit.text()
+            self.currentModelTrainer.modelName = self.ui.modelNameLineEdit.text()
 
             if self.trainerThread is None:
                 self.trainerThread = QtCore.QThread()
@@ -131,7 +131,7 @@ class ModelTrainer(AbstractTabWidget):
                 self.trainerThread.started.connect(self.currentModelTrainer.run)
 
                 self.currentModelTrainer.progress.connect(
-                    self.modelOutput.progressBar.setValue
+                    self.ui.trainingProgressBar.setValue
                 )
                 self.currentModelTrainer.status.connect(self.statusTextChanged)
                 self.currentModelTrainer.error.connect(self.showError)
@@ -140,7 +140,7 @@ class ModelTrainer(AbstractTabWidget):
                 self.currentModelTrainer.finished.connect(self.trainingEnded)
                 self.currentModelTrainer.connectedToThread = True
 
-            self.modelOutput.statusTextEdit.clear()
+            self.ui.logOutputTextEdit.clear()
             self.trainerThread.start()
         else:
             QtWidgets.QMessageBox.critical(
@@ -158,8 +158,7 @@ class ModelTrainer(AbstractTabWidget):
     def trainingEnded(self) -> None:
         """_summary_"""
         self.setTabsEnabled_fn(True)
-        self.modelSelector.setEnabled(True)
-        self.settings.setEnabled(True)
+        self.ui.modelSettingsWidget.setEnabled(True)
 
     @Slot()
     def destroyTrainers(self) -> None:
@@ -179,10 +178,10 @@ class ModelTrainer(AbstractTabWidget):
 
     @Slot(str)
     def statusTextChanged(self, text: str) -> None:
-        self.modelOutput.statusTextEdit.setPlainText(
-            self.modelOutput.statusTextEdit.toPlainText() + "\n" + text
+        self.ui.logOutputTextEdit.setPlainText(
+            self.ui.logOutputTextEdit.toPlainText() + "\n" + text
         )
-        self.modelOutput.statusTextEdit.moveCursor(QTextCursor.End)  # type: ignore
+        self.ui.outputLogLabel.moveCursor(QTextCursor.End)  # type: ignore
 
     def showError(self, text: str) -> None:
         QtWidgets.QMessageBox.critical(self, "Training error", text)
@@ -197,25 +196,25 @@ class ModelTrainer(AbstractTabWidget):
 
     def loadSettings(self):
         settings = SharedValues().settings.training
-        self.modelSelector.selector.setCurrentIndex(settings.model)
+        self.ui.modelSelectorComboBox.setCurrentIndex(settings.model)
 
-        self.settings.batchSpinBox.setValue(settings.batchSize)
-        self.settings.workerSpinBox.setValue(settings.numberOfWorkers)
-        self.settings.epochsSpinBox.setValue(settings.numberOfEpochs)
+        self.ui.batchSpinBox.setValue(settings.batchSize)
+        self.ui.workersSpinBox.setValue(settings.numberOfWorkers)
+        self.ui.epochsSpinBox.setValue(settings.numberOfEpochs)
 
-        self.settings.modelPathTextEdit.setText(settings.modelOutputPath)
-        self.settings.modelNameTextEdit.setText(settings.modelName)
+        self.ui.modelOutputPathLineEdit.setText(settings.modelOutputPath)
+        self.ui.modelNameLineEdit.setText(settings.modelName)
 
     def updateSettings(self):
         settings = SharedValues().settings.training
-        settings.model = self.modelSelector.selector.currentIndex()
+        settings.model = self.ui.modelSelectorComboBox.currentIndex()
 
-        settings.batchSize = self.settings.batchSpinBox.value()
-        settings.numberOfWorkers = self.settings.workerSpinBox.value()
-        settings.numberOfEpochs = self.settings.epochsSpinBox.value()
+        settings.batchSize = self.ui.batchSpinBox.value()
+        settings.numberOfWorkers = self.ui.workersSpinBox.value()
+        settings.numberOfEpochs = self.ui.epochsSpinBox.value()
 
-        settings.modelOutputPath = self.settings.modelPathTextEdit.text()
-        settings.modelName = self.settings.modelNameTextEdit.text()
+        settings.modelOutputPath = self.ui.modelOutputPathLineEdit.text()
+        settings.modelName = self.ui.modelNameLineEdit.text()
 
     #######################################################
     # Other
@@ -235,12 +234,9 @@ class ModelTrainer(AbstractTabWidget):
         elif index == FASTER_RCNN_MODEL_INDEX:
             self.currentModelTrainer = None
 
-    @Slot(int)
-    def modelChanged(self, index: int) -> None:
-        self.settings.settingsLabel.setText(f"Settings for {MODELS_NAMES[index]}:")
-
     def tabSelected(self) -> None:
         pass
 
     def tabClosed(self) -> None:
+        """Method called when tab was closed, another tab was clicked."""
         pass

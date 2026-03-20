@@ -10,8 +10,10 @@ Description:
 """
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtGui import QCloseEvent
+
+from app.ui import *
 
 import sys
 
@@ -27,85 +29,79 @@ from app.settings import *
 ##############################################################################
 
 
-class MyWindow(QtWidgets.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     clearCurrentImageSample = Signal()
 
     def __init__(self, qtApp: QtWidgets.QApplication) -> None:
         super().__init__()
-        self.qtApp = qtApp
-
-        SharedValues().screen = self.qtApp.primaryScreen()
         self.lastIndex: int | None = None
 
-        self.initWindow()
-        self._initUI()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)  # type: ignore
 
-    def initWindow(self) -> None:
-        screenWidth, screenHeight = (
-            SharedValues().screen.geometry().width(),
-            SharedValues().screen.geometry().height(),
-        )
-        windowWidth, windowHeight = screenWidth / 2, screenHeight / 2
+        self.qtApp = qtApp
+        SharedValues().screen = self.qtApp.primaryScreen()
 
-        if windowWidth < 640 or windowHeight < 480:
-            windowWidth = 640
-            windowHeight = 480
+        self.setupTabs()
+        self.showMaximized()
 
-        self.setGeometry(
-            int(screenWidth / 2 - windowWidth / 2),
-            int(screenHeight / 2 - windowHeight / 2),
-            int(windowWidth),
-            int(windowHeight),
-        )
+    def setupTabs(self) -> None:
+        """Sets up tabs of the widget."""
+        # designer does not allow to change the type of central widget, force the change in code
+        self.setCentralWidget(self.ui.tabWidget)
 
-    def _initUI(self) -> None:
-        self.mainUI = QtWidgets.QTabWidget()
+        self.ui.tabWidget.clear()
+
         self.dataLabelerWidget = DataLabeler()
-        self.datasetWidget = DatasetLoader(
+        self.datasetWidget = DatasetManager(
             self.dataLabelerWidget.screenScaleText, self.setTabsEnabled
         )
-        self.syntheticDataCreatorWidget = SyntheticDataCreator(
+        self.syntheticDataCreatorWidget = SyntheticFiltersEditor(
             self.dataLabelerWidget.getCurrentImageSample
         )
         self.modelTrainerWidget = ModelTrainer(self.setTabsEnabled)
 
-        self.datasetWidget.onImport.connect(
+        self.datasetWidget.onImportStart.connect(
             self.dataLabelerWidget.clearCurrentImageSample
         )
+        self.datasetWidget.onImportEnded.connect(
+            self.dataLabelerWidget.reloadImageSamplesTree
+        )
 
-        self.mainUI.addTab(self.datasetWidget, "Dataset")
-        self.mainUI.addTab(self.dataLabelerWidget, "Image labeling")
-        self.mainUI.addTab(self.syntheticDataCreatorWidget, "Synthetic data")
-        self.mainUI.addTab(self.modelTrainerWidget, "Training")
+        self.ui.tabWidget.addTab(self.datasetWidget, "Dataset")
+        self.ui.tabWidget.addTab(self.dataLabelerWidget, "Image labeling")
+        self.ui.tabWidget.addTab(self.syntheticDataCreatorWidget, "Synthetic data")
+        self.ui.tabWidget.addTab(self.modelTrainerWidget, "Training")
 
-        self.mainUI.currentChanged.connect(self.tabChanged)
-        self.setCentralWidget(self.mainUI)
+        self.ui.tabWidget.currentChanged.connect(self.tabChanged)
 
         self.loadSettings()
         self.datasetWidget.loadSettings()
         self.dataLabelerWidget.loadSettings()
         self.modelTrainerWidget.loadSettings()
 
-        self.showMaximized()
+    def setTabsEnabled(self, value: bool) -> None:
+        """Enables/disable all tabs except the current one."""
+        for i in range(0, self.ui.tabWidget.count()):
+            if i == self.ui.tabWidget.currentIndex():
+                continue
+            self.ui.tabWidget.setTabEnabled(i, value)
 
+    @Slot(int)
     def tabChanged(self, index: int) -> None:
+        """Slot called when tab was changed."""
         if self.lastIndex is not None:
-            tab = self.mainUI.widget(self.lastIndex)
+            tab = self.ui.tabWidget.widget(self.lastIndex)
             if isinstance(tab, AbstractTabWidget):
                 tab.tabClosed()
 
-        tab = self.mainUI.widget(index)
+        tab = self.ui.tabWidget.widget(index)
         self.lastIndex = index
         if isinstance(tab, AbstractTabWidget):
             tab.tabSelected()
 
-    def setTabsEnabled(self, value: bool) -> None:
-        for i in range(0, self.mainUI.count()):
-            if i == self.mainUI.currentIndex():
-                continue
-            self.mainUI.setTabEnabled(i, value)
-
     def loadSettings(self) -> None:
+        """Loads values used by the application from `settings.json`"""
         try:
             with open(r"settings.json", "r", encoding="utf-8") as f:
                 SharedValues().settings = AppSettings.from_json(f.read())  # type: ignore
@@ -118,6 +114,7 @@ class MyWindow(QtWidgets.QMainWindow):
         SharedValues().filterPresets = SharedValues().settings.syntheticSettings.filters
 
     def saveSettings(self) -> None:
+        """Saves values used by the application into `settings.json`."""
 
         self.datasetWidget.updateSettings()
         self.dataLabelerWidget.updateSettings()
@@ -129,6 +126,7 @@ class MyWindow(QtWidgets.QMainWindow):
             f.write(jsonStr)  # type: ignore
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Event called when window is destroyed/closed."""
         self.modelTrainerWidget.destroyTrainers()
 
         self.saveSettings()
@@ -138,11 +136,15 @@ class MyWindow(QtWidgets.QMainWindow):
 
 ##############################################################################
 
+
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    window = MyWindow(app)
+
+    window = MainWindow(app)
+
     window.show()
     sys.exit(app.exec())
+
 
 # for direct python execution
 if __name__ == "__main__":

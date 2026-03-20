@@ -22,64 +22,61 @@ from app.labeling.ImageLabelBox import ImageLabelBox
 from app.labeling.pointInRectangle import pointInRectangle
 from app.labeling.LabelEntry import LabelEntry
 
-from .dataLabelerWidgets.ImageBrowser import ImageBrowser
-from .dataLabelerWidgets.ClassLabelsBrowser import ClassLabelsBrowser
-from .dataLabelerWidgets.AutoDetectToolbar import AutoDetectToolbar
-from .dataLabelerWidgets.ImageLabelBoxToolbar import ImageLabelBoxToolbar
+from app.ui.DataLabeler_ui import Ui_DataLabeler
 
 
 class DataLabeler(AbstractTabWidget):
     def __init__(self) -> None:
         super().__init__()
 
+        self.ui = Ui_DataLabeler()
+        self.ui.setupUi(self)  # type: ignore
+
         self.currentImageSample: ImageSample | None = None
         self.imageAnalyzer: ImageAnalyzer | None = None
+        self.labelDeleteButtonsInitialized: bool = False
+        self.ignoreImageSampleChanged = False
 
-        self._initUI()
-        self.setupShortcuts()
+        self._connectUI()
+        self._setupShortcuts()
 
-    def _initUI(self) -> None:
-        self.setLayout(QtWidgets.QGridLayout())
-
+    def _connectUI(self) -> None:
         self._scene = ImageScene()
-        self.imageView = ZoomGraphicsView(self._scene, self.graphicsItemClicked)
+        self.ui.graphicsView.setScene(self._scene)
+        self.ui.graphicsView.itemClicked.connect(self.graphicsItemClicked)
 
         self._scene.setBackgroundBrush(QBrush(QtCore.Qt.GlobalColor.white))
         self._scene.setSceneRect(
             0,
             0,
-            self.imageView.rect().width() * 0.9,
-            self.imageView.rect().height() * 0.9,
+            self.ui.graphicsView.rect().width() * 0.9,
+            self.ui.graphicsView.rect().height() * 0.9,
         )
 
-        self.imageLabelBoxToolbar = ImageLabelBoxToolbar()
-        self.imageLabelBoxToolbar.new.connect(self.imageLabelBoxNewClicked)
-        self.imageLabelBoxToolbar.delete.connect(self.imageLabelBoxDeleteClicked)
-        self.imageLabelBoxToolbar.updateColors.connect(self.updateImageLabelBoxColors)
+        self.ui.imageSampleTreeView.setImageSamples(SharedValues().imageSamples)
+        self.ui.labelSelectorTreeView.setLabels(SharedValues().labelsDict)
 
-        self.autoDetectToolbar = AutoDetectToolbar()
-        self.autoDetectToolbar.autoDetect.connect(self.autoDetectLabelsClicked)
-        self.autoDetectToolbar.openModel.connect(self.openModelClicked)
-        self.autoDetectToolbar.loadModel.connect(self.loadModelClicked)
+        self.ui.newLabelBoxButton.clicked.connect(self.imageLabelBoxNewClicked)
+        self.ui.deleteLabelBoxButton.clicked.connect(self.imageLabelBoxDeleteClicked)
+        self.ui.selectedColorPicker.clicked.connect(self.updateImageLabelBoxColors)
+        self.ui.unselectedColorPicker.clicked.connect(self.updateImageLabelBoxColors)
 
-        self.imageBrowser = ImageBrowser()
-        self.imageBrowser.nextImage.connect(self.nextImageSampleClicked)
-        self.imageBrowser.previousImage.connect(self.previousImageSampleClicked)
-        self.imageBrowser.imageSampleChanged.connect(self.imageSampleChanged)
+        self.ui.autoDetectButton.clicked.connect(self.autoDetectLabelsClicked)
+        self.ui.openModelButton.clicked.connect(self.openModelClicked)
+        self.ui.loadModelButton.clicked.connect(self.loadAutoDetectModel)
 
-        self.classLabelsBrowser = ClassLabelsBrowser()
-        self.classLabelsBrowser.labelsChanged.connect(self.classLabelsChanged)
-        self.classLabelsBrowser.dataEdited.connect(self.classLabelsEdited)
-        self.classLabelsBrowser.new.connect(self.classLabelsNewEntry)
-        self.classLabelsBrowser.delete.connect(self.classLabelsDeleteEntry)
+        self.ui.previousSampleButton.clicked.connect(self.nextImageSample)
+        self.ui.nextSampleButton.clicked.connect(self.nextImageSample)
+        self.ui.imageSampleTreeView.selectedSampleChanged.connect(
+            self.imageSampleChanged
+        )
 
-        self.layout().addWidget(self.imageLabelBoxToolbar, 0, 0)
-        self.layout().addWidget(self.autoDetectToolbar, 0, 1)
-        self.layout().layout().addWidget(self.imageBrowser, 1, 0)
-        self.layout().addWidget(self.imageView, 1, 1)
-        self.layout().addWidget(self.classLabelsBrowser, 1, 2)
+        self.ui.newClassLabelButton.clicked.connect(self.classLabelsNewEntry)
+        self.ui.deleteClassLabelButton.clicked.connect(self.classLabelsDeleteEntry)
+        self.ui.labelSelectorTreeView.dataEdited.connect(self.classLabelsEdited)
+        self.ui.labelSelectorTreeView.labelsChanged.connect(self.classLabelsChanged)
 
-    def setupShortcuts(self) -> None:
+    def _setupShortcuts(self) -> None:
         """Initializes shortcuts"""
         self._shortcutNewLabel = QShortcut(QKeySequence("Space"), self)
         self._shortcutNewLabel.activated.connect(self.imageLabelBoxNewClicked)
@@ -88,12 +85,10 @@ class DataLabeler(AbstractTabWidget):
         self._shortcutDeleteLabel.activated.connect(self.imageLabelBoxDeleteClicked)
 
         self._shortcutNextImageSample = QShortcut(QKeySequence("E"), self)
-        self._shortcutNextImageSample.activated.connect(self.nextImageSampleClicked)
+        self._shortcutNextImageSample.activated.connect(self.nextImageSample)
 
         self._shortcutPreviousImageSample = QShortcut(QKeySequence("Q"), self)
-        self._shortcutPreviousImageSample.activated.connect(
-            self.previousImageSampleClicked
-        )
+        self._shortcutPreviousImageSample.activated.connect(self.previousImageSample)
 
         self._autoDetectLabels = QShortcut(QKeySequence("Tab"), self)
         self._autoDetectLabels.activated.connect(self.autoDetectLabelsClicked)
@@ -104,28 +99,29 @@ class DataLabeler(AbstractTabWidget):
 
     def correctSceneAndView(self) -> None:
         """Corrects scale of `QGraphicsView` based on loaded `ImageSample`"""
-        self.imageView.resetTransform()
+        self.ui.graphicsView.resetTransform()
 
-        wScale = self.imageView.rect().width() / self.currentImageSample.width
-        hScale = self.imageView.rect().height() / self.currentImageSample.height
+        wScale = self.ui.graphicsView.rect().width() / self.currentImageSample.width
+        hScale = self.ui.graphicsView.rect().height() / self.currentImageSample.height
 
         scale = min(wScale, hScale)
 
         SCALE_CONST = (
             0.02  # constant for zooming out move to get rid of sliders on sides
         )
-        self.imageView.scale(scale - SCALE_CONST, scale - SCALE_CONST)
+        self.ui.graphicsView.scale(scale - SCALE_CONST, scale - SCALE_CONST)
 
     def loadImageSample(self) -> None:
         """Loads `currentImageSample` image sample into current graphics scene and corrects size and zoom of screen"""
+        print("DEBUG: loadImageSample")
         self.currentImageSample.load(
-            self.imageLabelBoxToolbar.selectedColorPicker.color,
-            self.imageLabelBoxToolbar.defaultColorPicker.color,
+            self.ui.selectedColorPicker.color,
+            self.ui.unselectedColorPicker.color,
         )
 
         self._scene.clear()
-        self.imageView.resetZoom()
-        self.imageView.selectedItem = None
+        self.ui.graphicsView.resetZoom()
+        self.ui.graphicsView.selectedItem = None
 
         self._scene.setPixmap(self.currentImageSample.getQPixmap())
         self._scene.setSceneRect(
@@ -138,17 +134,19 @@ class DataLabeler(AbstractTabWidget):
         self.correctSceneAndView()
 
         # reset warning on image samples tree view
-        if self.currentImageSample is not None:
-            self.imageBrowser.treeView.checkImageSampleWarnings(
-                self.currentImageSample,
-                checkLabelBoxes=True,
-                checkImageLabelBoxes=False,
-            )
+        # if self.currentImageSample is not None:
+        #     print(f"loadImageSample")
+        #     self.ui.imageSampleTreeView.checkImageSampleWarnings(
+        #         self.currentImageSample,
+        #         checkLabelBoxes=True,
+        #         checkImageLabelBoxes=False,
+        #     )
 
     def graphicsItemClicked(self) -> None:
         # reset warning on image samples tree view
         if self.currentImageSample is not None:
-            self.imageBrowser.treeView.checkImageSampleWarnings(
+            print(f"graphicsItemClicked")
+            self.ui.imageSampleTreeView.checkImageSampleWarnings(
                 self.currentImageSample,
                 checkLabelBoxes=False,
                 checkImageLabelBoxes=True,
@@ -174,12 +172,12 @@ class DataLabeler(AbstractTabWidget):
             self._scene.sceneRect().height() / 2,
         )
 
-        if self.classLabelsBrowser.treeView.currIndex is not None:
-            defaultLabelIndex = self.classLabelsBrowser.treeView.currIndex
+        if self.ui.labelSelectorTreeView.currIndex is not None:
+            defaultLabelIndex = self.ui.labelSelectorTreeView.currIndex
             defaultLabelName = SharedValues().labelsDict[defaultLabelIndex].name
 
-        globalPosition = self.imageView.mapFromGlobal(QCursor.pos())
-        scenePosition = self.imageView.mapToScene(globalPosition)
+        globalPosition = self.ui.graphicsView.mapFromGlobal(QCursor.pos())
+        scenePosition = self.ui.graphicsView.mapToScene(globalPosition)
 
         if pointInRectangle(scenePosition, self._scene.sceneRect()):
             defaultX, defaultY = scenePosition.x(), scenePosition.y()
@@ -190,45 +188,47 @@ class DataLabeler(AbstractTabWidget):
             defaultLabelName,
             self.screenScaleText,
             self.currentImageSample.rect(),
-            self.imageLabelBoxToolbar.selectedColorPicker.color,
-            self.imageLabelBoxToolbar.defaultColorPicker.color,
+            self.ui.selectedColorPicker.color,
+            self.ui.unselectedColorPicker.color,
         )
 
         self.currentImageSample.add(newLabelBox)
         self._scene.addItem(newLabelBox)
 
-        if self.imageView.selectedItem is not None:
-            self.imageView.selectedItem.setSelected(False)
-        self.imageView.selectedItem = newLabelBox
-        self.imageView.selectedItem.setSelected(True)
+        if self.ui.graphicsView.selectedItem is not None:
+            self.ui.graphicsView.selectedItem.setSelected(False)
+        self.ui.graphicsView.selectedItem = newLabelBox
+        self.ui.graphicsView.selectedItem.setSelected(True)
 
     @Slot()
     def imageLabelBoxDeleteClicked(self) -> None:
         """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
         if (
             self.currentImageSample is not None
-            and self.imageView.selectedItem is not None
+            and self.ui.graphicsView.selectedItem is not None
         ):
-            self.currentImageSample.remove(self.imageView.selectedItem)
-            self._scene.removeItem(self.imageView.selectedItem)
+            self.currentImageSample.remove(self.ui.graphicsView.selectedItem)
+            self._scene.removeItem(self.ui.graphicsView.selectedItem)
 
-            self.imageBrowser.treeView.checkImageSampleWarnings(
+            print(f"imageLabelBoxDeleteClicked")
+            self.ui.imageSampleTreeView.checkImageSampleWarnings(
                 self.currentImageSample,
                 checkLabelBoxes=False,
                 checkImageLabelBoxes=True,
             )
 
-        self.imageView.selectedItem = None
+        self.ui.graphicsView.selectedItem = None
 
     @Slot()
     def updateImageLabelBoxColors(self) -> None:
+        """Updates colors of all `ImageLabelBoxes` in current `ImageSample`."""
         if self.currentImageSample is None:
             return
 
         for imageLabelBox in self.currentImageSample.imageLabelBoxes:
             imageLabelBox.updateColors(
-                defaultColor=self.imageLabelBoxToolbar.defaultColorPicker.color,
-                selectedColor=self.imageLabelBoxToolbar.selectedColorPicker.color,
+                defaultColor=self.ui.unselectedColorPicker.color,
+                selectedColor=self.ui.selectedColorPicker.color,
             )
 
     #######################################################
@@ -237,12 +237,12 @@ class DataLabeler(AbstractTabWidget):
 
     @Slot()
     def classLabelsChanged(self, index: QModelIndex):
-        """Slot called when label from `classLabelsBrowser.treeView` was changed"""
+        """Slot called when label from `ui.labelSelectorTreeView` was changed"""
 
-        self.classLabelsBrowser.treeView.selectLabel(index)
+        self.ui.labelSelectorTreeView.selectLabel(index)
 
         if self.currentImageSample is not None:
-            selectedLabelBox: ImageLabelBox | None = self.imageView.selectedItem
+            selectedLabelBox: ImageLabelBox | None = self.ui.graphicsView.selectedItem
 
             if selectedLabelBox is not None:
                 model = index.model()
@@ -253,7 +253,8 @@ class DataLabeler(AbstractTabWidget):
 
             # reset warning on image samples tree view
             if self.currentImageSample is not None:  # type: ignore
-                self.imageBrowser.treeView.checkImageSampleWarnings(
+                print(f"classLabelsChanged")
+                self.ui.imageSampleTreeView.checkImageSampleWarnings(
                     self.currentImageSample,
                     checkLabelBoxes=False,
                     checkImageLabelBoxes=True,
@@ -268,26 +269,42 @@ class DataLabeler(AbstractTabWidget):
             if topLeft != bottomRight:
                 raise Exception("Shouldn't happen")
 
-            name = self.classLabelsBrowser.treeView.model.index(row, 1).data()
+            name = self.ui.labelSelectorTreeView.model.index(row, 1).data()
 
             SharedValues().labelsDict[row] = LabelEntry(name, row)
-            self.currentImageSample.reloadImageLabels()
+            if self.currentImageSample is not None:
+                self.currentImageSample.reloadImageLabels()
 
     @Slot()
     def classLabelsNewEntry(self) -> None:
         """Creates new `LabelEntry` into global dictionary of labels"""
         index = len(SharedValues().labelsDict)
         SharedValues().labelsDict[index] = LabelEntry("new", index)
-        self.classLabelsBrowser.treeView.loadLabels()
+        self.ui.labelSelectorTreeView.loadLabels()
 
     @Slot()
     def classLabelsDeleteEntry(self) -> None:
         """Deletes label from global list of labels, all keys will be moved down"""
-        if self.classLabelsBrowser.treeView.currIndex is None:
+        if self.ui.labelSelectorTreeView.currIndex is None:
             return
 
-        # TODO: Add warning!
-        index = self.classLabelsBrowser.treeView.currIndex
+        if not self.labelDeleteButtonsInitialized:
+            self.confirmLabelDeleteButton = QtWidgets.QPushButton("Confirm")
+            self.cancelLabelDeleteButton = QtWidgets.QPushButton("Cancel")
+
+        warningReply = QtWidgets.QMessageBox.warning(
+            self,
+            "Warning",
+            "Deleting a class will cause all other classes to move down with their indexes. "
+            "Furthermore this change is not reversible.",
+            QtWidgets.QMessageBox.StandardButton.Ok
+            | QtWidgets.QMessageBox.StandardButton.Abort,
+        )
+
+        if warningReply == QtWidgets.QMessageBox.StandardButton.Abort:
+            return
+
+        index = self.ui.labelSelectorTreeView.currIndex
         SharedValues().labelsDict.pop(index)
 
         keys = list(SharedValues().labelsDict.keys())
@@ -318,7 +335,7 @@ class DataLabeler(AbstractTabWidget):
                 elif imageLabelBox.label > index:
                     imageLabelBox.label = imageLabelBox.label - 1
 
-        self.classLabelsBrowser.treeView.loadLabels()
+        self.ui.labelSelectorTreeView.loadLabels()
 
     #######################################################
     # Image Sample Browser
@@ -329,6 +346,10 @@ class DataLabeler(AbstractTabWidget):
         self, current: QItemSelection, previous: QItemSelection
     ) -> None:
         """Slot called when `ImageSample`from QTreeView dataset was changed"""
+        if self.ignoreImageSampleChanged:
+            return
+        print("DEBUG: imageSampleChanged")
+
         if self.currentImageSample is not None:
             self.currentImageSample.unload(save=True)
 
@@ -358,30 +379,40 @@ class DataLabeler(AbstractTabWidget):
         self.currentImageSample = newCurrentImageSample
 
         if oldImageSample is not None:
-            self.imageBrowser.treeView.checkImageSampleWarnings(
+            self.ignoreImageSampleChanged = True
+            self.ui.imageSampleTreeView.checkImageSampleWarnings(
                 oldImageSample, checkLabelBoxes=True, checkImageLabelBoxes=False
             )
+            self.ignoreImageSampleChanged = False
         self.loadImageSample()
 
     @Slot()
-    def nextImageSampleClicked(self) -> None:
+    def nextImageSample(self) -> None:
+        """Selects next image sample in `ImageSampleView`"""
         if self.currentImageSample is None:
             return
 
-        currentIndex = self.imageBrowser.treeView.currentIndex()
-        nextIndex = self.imageBrowser.treeView.indexBelow(currentIndex)
+        currentIndex = self.ui.imageSampleTreeView.currentIndex()
+        nextIndex = self.ui.imageSampleTreeView.indexBelow(currentIndex)
         if nextIndex.isValid():
-            self.imageBrowser.treeView.setCurrentIndex(nextIndex)
+            self.ui.imageSampleTreeView.setCurrentIndex(nextIndex)
 
     @Slot()
-    def previousImageSampleClicked(self) -> None:
+    def previousImageSample(self) -> None:
+        """Selects previous image sample in `ImageSampleView`"""
         if self.currentImageSample is None:
             return
 
-        currentIndex = self.imageBrowser.treeView.currentIndex()
-        previousIndex = self.imageBrowser.treeView.indexAbove(currentIndex)
+        currentIndex = self.ui.imageSampleTreeView.currentIndex()
+        previousIndex = self.ui.imageSampleTreeView.indexAbove(currentIndex)
         if previousIndex.isValid():
-            self.imageBrowser.treeView.setCurrentIndex(previousIndex)
+            self.ui.imageSampleTreeView.setCurrentIndex(previousIndex)
+
+    @Slot()
+    def reloadImageSamplesTree(self) -> None:
+        print("Reloading samples")
+        self.ui.imageSampleTreeView.loadSamples(restoreVerticalPosition=True)
+        self.ui.labelSelectorTreeView.loadLabels()
 
     #######################################################
     # Automatic Detection Toolbar
@@ -389,8 +420,12 @@ class DataLabeler(AbstractTabWidget):
 
     @Slot()
     def autoDetectLabelsClicked(self) -> None:
+        """
+        Attempts to detect objects in current `ImageSample`. Existing detections are not
+        considered and duplicates might be created.
+        """
         if self.imageAnalyzer is None:
-            self.autoDetectToolbar.btnAutoDetect.setEnabled(False)
+            self.ui.autoDetectButton.setEnabled(False)
             return
         else:
             if self.currentImageSample is None:
@@ -409,21 +444,22 @@ class DataLabeler(AbstractTabWidget):
                     SharedValues().labelsDict[det.classIndex].name,
                     self.screenScaleText,
                     self.currentImageSample.rect(),
-                    self.imageLabelBoxToolbar.selectedColorPicker.color,
-                    self.imageLabelBoxToolbar.defaultColorPicker.color,
+                    self.ui.selectedColorPicker.color,
+                    self.ui.unselectedColorPicker.color,
                 )
 
                 self.currentImageSample.add(box)
                 self._scene.addItem(box)
 
     @Slot()
-    def loadModelClicked(self) -> None:
+    def loadAutoDetectModel(self) -> None:
+        """Loads model from `ui.modelPathLineEdit` and tries to initialize the `ImageAnalyzer`."""
         EXPECTED_MODEL_SIZE = 640
 
-        if self.autoDetectToolbar.textEditModelPath.text() != "":
-            self.autoDetectToolbar.btnAutoDetect.setEnabled(True)
+        if self.ui.modelPathLineEdit.text() != "":
+            self.ui.autoDetectButton.setEnabled(True)
             self.imageAnalyzer = ImageAnalyzer(
-                self.autoDetectToolbar.textEditModelPath.text(),
+                self.ui.modelPathLineEdit.text(),
                 EXPECTED_MODEL_SIZE,
                 (114, 114, 114),
                 0.6,
@@ -437,47 +473,49 @@ class DataLabeler(AbstractTabWidget):
             self, "Select a model", "", "ONNX models (*.onnx)"
         )
         if fileName:
-            self.autoDetectToolbar.textEditModelPath.setText(fileName)
+            self.ui.modelPathLineEdit.setText(fileName)
 
     #######################################################
     # Settings
     #######################################################
 
     def loadSettings(self):
+        """Loads values from SharedValues.AppSettings into the app."""
         settings = SharedValues().settings.labeling
         defaultColor = QColor(
             settings.defaultColorRed,
             settings.defaultColorGreen,
             settings.defaultColorBlue,
         )
-        self.imageLabelBoxToolbar.defaultColorPicker.color = defaultColor
-        self.imageLabelBoxToolbar.defaultColorPicker.updateBackgroundColor()
+        self.ui.unselectedColorPicker.color = defaultColor
+        self.ui.unselectedColorPicker.updateBackgroundColor()
 
         selectedColor = QColor(
             settings.selectedColorRed,
             settings.selectedColorGreen,
             settings.selectedColorBlue,
         )
-        self.imageLabelBoxToolbar.selectedColorPicker.color = selectedColor
-        self.imageLabelBoxToolbar.selectedColorPicker.updateBackgroundColor()
+        self.ui.selectedColorPicker.color = selectedColor
+        self.ui.selectedColorPicker.updateBackgroundColor()
 
-        self.imageLabelBoxToolbar.updateColors.emit()
+        self.updateImageLabelBoxColors()
 
-        self.autoDetectToolbar.textEditModelPath.setText(settings.modelPath)
+        self.ui.modelPathLineEdit.setText(settings.modelPath)
 
     def updateSettings(self):
+        """Updates current values of the SharedValues.AppSettings."""
         settings = SharedValues().settings.labeling
-        defaultColor = self.imageLabelBoxToolbar.defaultColorPicker.color
+        defaultColor = self.ui.unselectedColorPicker.color
         settings.defaultColorRed = defaultColor.red()
         settings.defaultColorGreen = defaultColor.green()
         settings.defaultColorBlue = defaultColor.blue()
 
-        selectedColor = self.imageLabelBoxToolbar.selectedColorPicker.color
+        selectedColor = self.ui.selectedColorPicker.color
         settings.selectedColorRed = selectedColor.red()
         settings.selectedColorGreen = selectedColor.green()
         settings.selectedColorBlue = selectedColor.blue()
 
-        settings.modelPath = self.autoDetectToolbar.textEditModelPath.text()
+        settings.modelPath = self.ui.modelPathLineEdit.text()
 
     #######################################################
     # Other
@@ -492,19 +530,22 @@ class DataLabeler(AbstractTabWidget):
 
     def tabSelected(self) -> None:
         """Slot called on change of tabs"""
-        self.imageBrowser.treeView.loadSamples(restoreVerticalPosition=True)
-        self.classLabelsBrowser.treeView.loadLabels()
+        print(f"DataLabeler.tabSelected")
 
-        self.imageView.selectedItem = None
+        self.ui.graphicsView.selectedItem = None
         if self.currentImageSample is not None:
             self.loadImageSample()
+
+        self.ignoreImageSampleChanged = False
 
     @Slot()
     def clearCurrentImageSample(self):
         self.currentImageSample = None
 
     def tabClosed(self) -> None:
+        """Method called when tab was closed, another tab was clicked."""
+        self.ignoreImageSampleChanged = True
+
         if self.currentImageSample is not None:
             self.currentImageSample.unload(save=True)
-
         self._scene.clear()

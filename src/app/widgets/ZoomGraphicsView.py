@@ -8,35 +8,26 @@ Description:
     callbacks on QGraphicsItem mouseClicked events.
 """
 
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QGraphicsItem
+from PySide6.QtWidgets import QGraphicsView, QWidget, QGraphicsItem
 from PySide6.QtGui import QPainter, QMouseEvent, QWheelEvent
-from PySide6.QtCore import Qt
-
-from typing import Callable
+from PySide6.QtCore import Qt, Signal
 
 from app.widgets import *
 from app.labeling import ImageLabelBox
 
 
 class ZoomGraphicsView(QGraphicsView):
+    itemClicked = Signal()
+
     def __init__(
         self,
-        scene: QGraphicsScene,
-        onGraphicsItemClickSlot_fn: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
-        super().__init__(scene, parent)
-
-        self._scene: QGraphicsScene = scene
+        super().__init__(parent)
         self._zoom: float = 0
         self._zoomStep: float = 1.25
         self._zoomRange: tuple[float, float] = (-20, 20)
         self.selectedItem: ImageLabelBox | None = None
-        self.onGraphicsItemClickSlot_fn = (
-            onGraphicsItemClickSlot_fn
-            if (onGraphicsItemClickSlot_fn is not None)
-            else self.empty_fn
-        )
 
         self._hScrollConst: float = 2.0
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -74,7 +65,7 @@ class ZoomGraphicsView(QGraphicsView):
             if self.selectedItem is not None:
                 self.selectedItem.setSelected(False)
                 self.selectedItem = None
-                self.onGraphicsItemClickSlot_fn()
+                self.itemClicked.emit()
 
             if isinstance(item, ImageLabelBox):
                 self.selectedItem = item

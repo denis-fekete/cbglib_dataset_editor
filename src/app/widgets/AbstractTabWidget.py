@@ -18,6 +18,7 @@ class AbstractTabWidget(QWidget):
         pass
 
     def tabClosed(self) -> None:
+        """Method called when tab was closed, another tab was clicked."""
         pass
 
     def updateSettings(self) -> None:

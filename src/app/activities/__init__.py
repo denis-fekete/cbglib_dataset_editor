@@ -1,6 +1,6 @@
 from .DataLabeler import DataLabeler
-from .DatasetLoader import DatasetLoader
+from .DatasetManager import DatasetManager
 from .ModelTrainer import ModelTrainer
-from .SyntheticDataCreator import SyntheticDataCreator
+from .SyntheticFiltersEditor import SyntheticFiltersEditor
 
-__all__ = ["DataLabeler", "DatasetLoader", "ModelTrainer", "SyntheticDataCreator"]
+__all__ = ["DataLabeler", "DatasetManager", "ModelTrainer", "SyntheticFiltersEditor"]

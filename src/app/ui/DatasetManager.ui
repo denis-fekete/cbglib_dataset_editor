@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DatasetManager</class>
+ <widget class="QWidget" name="DatasetManager">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1055</width>
+    <height>644</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1055</width>
+    <height>616</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,1">
+   <item row="0" column="0" rowspan="2">
+    <widget class="QWidget" name="detailsWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>300</width>
+       <height>0</height>
+      </size>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QFormLayout" name="statisticsForm">
+        <item row="1" column="0">
+         <widget class="QLabel" name="labeldFilesLabel">
+          <property name="text">
+           <string>Label files</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="labeledLineEdit"/>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="imagesSamplesLabel">
+          <property name="text">
+           <string>Image Samples:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="imageSamplesLineEdit"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="annotatedSamplesLabel">
+          <property name="text">
+           <string>Annotated Image Samples</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="annotatedLineEdit"/>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="emptySamplesLabel">
+          <property name="text">
+           <string>Empty image samples</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="emptySamplesLineEdit"/>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="classesLabel">
+          <property name="text">
+           <string>Total classes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLineEdit" name="totalClassesLineEdit"/>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="imageLabelBoxesLabel">
+          <property name="text">
+           <string>Image label boxes count</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QLineEdit" name="labelBoxesLineEdit"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="datasetStatisticsLabel">
+          <property name="text">
+           <string>Dataset statistics:</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="calcStatisticsButton">
+        <property name="text">
+         <string>Calculate Statistics</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="datasetDetailsLabel">
+        <property name="text">
+         <string>Dataset details (data.yaml):</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QFormLayout" name="detailsForm">
+        <item row="0" column="0">
+         <widget class="QLabel" name="dataPathLabel">
+          <property name="text">
+           <string>path:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="trainLabel">
+          <property name="text">
+           <string>train:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="valLabel">
+          <property name="text">
+           <string>val:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="testLabel">
+          <property name="text">
+           <string>test:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="dataPathLineEdit"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="trainLineEdit"/>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="valLineEdit"/>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="testLineEdit"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="LabelSelectorTreeView" name="classesTreeView"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="1" rowspan="2">
+    <widget class="Line" name="line_3">
+     <property name="orientation">
+      <enum>Qt::Orientation::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QWidget" name="importExportWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="5" column="0" colspan="3">
+       <layout class="QHBoxLayout" name="generate">
+        <item>
+         <widget class="QSpinBox" name="trainPercentSpinBox">
+          <property name="prefix">
+           <string>Traid data %:  </string>
+          </property>
+          <property name="maximum">
+           <number>100</number>
+          </property>
+          <property name="value">
+           <number>80</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="genSyntheticCheckBox">
+          <property name="text">
+           <string>Generate synthetic data</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="genNamesCheckBox">
+          <property name="text">
+           <string>Generate names</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="separateCheckBox">
+          <property name="text">
+           <string>Separate into subdirectories</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="8" column="2">
+       <widget class="QPushButton" name="exportButton">
+        <property name="text">
+         <string>Export</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QPushButton" name="exportOpenButton">
+        <property name="text">
+         <string>Open</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="3">
+       <widget class="ImageSampleTreeView" name="imageSampleTreeView"/>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="importButton">
+        <property name="text">
+         <string>Import</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLineEdit" name="importLineEdit"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="importLabel">
+        <property name="text">
+         <string>Import path:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="importOpenButton">
+        <property name="text">
+         <string>Open</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0" colspan="3">
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="exportLabel">
+        <property name="text">
+         <string>Export path:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLineEdit" name="exportLineEdit"/>
+      </item>
+      <item row="4" column="0" colspan="3">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="2" column="0" colspan="3">
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QWidget" name="exportWidget" native="true">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="progressLabel">
+        <property name="text">
+         <string>Export Progress: </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QProgressBar" name="exportProgressBar">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageSampleTreeView</class>
+   <extends>QTreeView</extends>
+   <header>app.widgets.ImageSampleTreeView</header>
+  </customwidget>
+  <customwidget>
+   <class>LabelSelectorTreeView</class>
+   <extends>QTreeView</extends>
+   <header>app.widgets.LabelSelectorTreeView</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

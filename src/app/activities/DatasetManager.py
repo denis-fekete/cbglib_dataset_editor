@@ -20,13 +20,13 @@ from app.dataset import *
 from app.labeling import *
 from app.settings import *
 from app.utils.SharedValues import SharedValues
-from .datasetLoaderWidgets.ExportToolbar import ExportToolbar
-from .datasetLoaderWidgets.ImportToolbar import ImportToolbar
-from .datasetLoaderWidgets.DatasetInfoToolbar import DatasetInfoToolbar
+
+from app.ui.DatasetManager_ui import Ui_DatasetManager
 
 
-class DatasetLoader(AbstractTabWidget):
-    onImport = Signal()
+class DatasetManager(AbstractTabWidget):
+    onImportStart = Signal()
+    onImportEnded = Signal()
 
     def __init__(
         self,
@@ -34,6 +34,8 @@ class DatasetLoader(AbstractTabWidget):
         setTabsEnabled_fn: Callable[[bool], None],
     ):
         super().__init__()
+        self.ui = Ui_DatasetManager()
+        self.ui.setupUi(self)  # type: ignore
 
         self.screenScaleText_fn = screenScaleText_fn
         self.setParentEnabled_fn = setTabsEnabled_fn
@@ -41,27 +43,21 @@ class DatasetLoader(AbstractTabWidget):
         self.incorrectLabels: bool = True
         self.imageDataset = ImageDataset(self.screenScaleText_fn)
 
-        self._initUI()
+        self._connectUI()
 
-    def _initUI(self) -> None:
-        self.setLayout(QtWidgets.QGridLayout())
+    def _connectUI(self) -> None:
+        self.ui.classesTreeView.setLabels(SharedValues().labelsDict)
+        self.ui.imageSampleTreeView.setImageSamples(SharedValues().imageSamples)
 
-        self.importToolbar = ImportToolbar()
-        self.importToolbar.importDialog.connect(self.openImportDialog)
-        self.importToolbar.importClicked.connect(self.importDataset)
-        self.importToolbar.importPathChanged.connect(self.importPathChanged)
+        self.ui.importButton.clicked.connect(self.importDataset)
+        self.ui.importOpenButton.clicked.connect(self.openImportDialog)
+        self.ui.importLineEdit.textChanged.connect(self.importPathChanged)
 
-        self.exportToolbar = ExportToolbar()
-        self.exportToolbar.exportClicked.connect(self.exportDataset)
-        self.exportToolbar.exportDialog.connect(self.openExportDialog)
-        self.exportToolbar.exportPathChanged.connect(self.exportPathChanged)
+        self.ui.exportButton.clicked.connect(self.exportDataset)
+        self.ui.exportOpenButton.clicked.connect(self.openExportDialog)
+        self.ui.exportLineEdit.textChanged.connect(self.exportPathChanged)
 
-        self.datasetInfoToolbar = DatasetInfoToolbar()
-        self.datasetInfoToolbar.calculateStatistics.connect(self.calculateStatistics)
-
-        self.layout().addWidget(self.importToolbar, 0, 0)
-        self.layout().addWidget(self.exportToolbar, 1, 0)
-        self.layout().addWidget(self.datasetInfoToolbar, 0, 1, 3, 1)
+        self.ui.calcStatisticsButton.clicked.connect(self.calculateStatistics)
 
     #######################################################
     # Importing dataset
@@ -76,7 +72,7 @@ class DatasetLoader(AbstractTabWidget):
         if textPath == "":
             return
         else:
-            self.importToolbar.importPathTextEdit.setText(textPath)
+            self.ui.importLineEdit.setText(textPath)
             self.dataYamlPath = None
 
             self.importDataset()
@@ -88,14 +84,16 @@ class DatasetLoader(AbstractTabWidget):
     @Slot()
     def importDataset(self) -> None:
         """Loads `ImageDataset` from `self.importToolbar.importPathTextEdit`"""
-        path = Path(self.importToolbar.importPathTextEdit.text())
-        if self.importToolbar.importPathTextEdit.text() == "" or not path.is_dir():
+        path = Path(self.ui.importLineEdit.text())
+
+        if self.ui.importLineEdit.text() == "" or not path.is_dir():
             QtWidgets.QMessageBox.warning(
                 self, "Warning", "Not a valid path for import dataset."
             )
 
         SharedValues().imageSamples.clear()
-        self.onImport.emit()
+        self.onImportStart.emit()
+        self.onImportEnded.emit()
 
         try:
             self.imageDataset.loadImageSamples(
@@ -106,7 +104,8 @@ class DatasetLoader(AbstractTabWidget):
 
             self.updateDataYaml()
 
-            self.importToolbar.treeView.loadSamplesFull()
+            self.ui.imageSampleTreeView.loadSamples(showFull=True)
+            self.onImportEnded.emit()
         except Exception as e:
             QtWidgets.QMessageBox.warning(self, "Error", e.__str__())
 
@@ -120,19 +119,18 @@ class DatasetLoader(AbstractTabWidget):
         textPath = QtWidgets.QFileDialog().getExistingDirectory(
             self, "Select a Folder", "", QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
-        self.exportToolbar.exportPathTextEdit.setText(textPath)
+        self.ui.exportLineEdit.setText(textPath)
 
     @Slot()
     def exportDataset(self) -> None:
-        """Qt slot for starting export"""
+        """Start the export of dataset"""
         exportPath = Path(SharedValues().datasetExportPath)
-        self.exportToolbar.progressBar.setEnabled(True)
 
         if SharedValues().datasetExportPath == "":
             newExportPath = Path(SharedValues().datasetImportPath).parent / "exported"
             os.makedirs(newExportPath, exist_ok=True)
-            # SharedValues().datasetExportPath = _exportPathTextEdit.text() called automatically
-            self.exportToolbar.exportPathTextEdit.setText(str(newExportPath.resolve()))
+            # SharedValues().datasetExportPath =  self.ui.exportLineEdit.text() called automatically
+            self.ui.exportLineEdit.setText(str(newExportPath.resolve()))
         else:
             if exportPath.exists():
                 if not exportPath.is_dir():
@@ -153,14 +151,13 @@ class DatasetLoader(AbstractTabWidget):
 
     @Slot(int)
     def exportProgressUpdate(self, progress: int) -> None:
-        self.exportToolbar.progressBar.setValue(progress)
+        self.ui.exportProgressBar.setValue(progress)
 
     @Slot()
     def exportProgressDone(self) -> None:
-        self.exportToolbar.progressBar.setEnabled(False)
-        self.exportToolbar.setEnabled(True)
-        self.importToolbar.setEnabled(True)
-        self.datasetInfoToolbar.setEnabled(True)
+        self.ui.exportWidget.setEnabled(False)
+        self.ui.importExportWidget.setEnabled(True)
+        self.ui.detailsWidget.setEnabled(True)
         self.setParentEnabled_fn(True)
 
     def updateDataYaml(self) -> None:
@@ -170,10 +167,11 @@ class DatasetLoader(AbstractTabWidget):
         """
         path = Path(SharedValues().datasetImportPath)
 
-        self.datasetInfoToolbar.dataPath.setText(path.name)
-        self.datasetInfoToolbar.valPath.setText("images/val")
-        self.datasetInfoToolbar.trainPath.setText("images/train")
-        self.datasetInfoToolbar.testPath.setText("# not used")
+        self.ui.dataPathLabel.setText(path.name)
+
+        self.ui.valLineEdit.setText("images/val")
+        self.ui.trainLineEdit.setText("images/train")
+        self.ui.testLineEdit.setText("# not used")
 
         if self.imageDataset.dataYamlPath is None:
             return
@@ -184,7 +182,7 @@ class DatasetLoader(AbstractTabWidget):
         for index, name in data["names"].items():
             SharedValues().labelsDict[index] = LabelEntry(name, index)
 
-        self.datasetInfoToolbar.treeView.loadLabels()
+        self.ui.classesTreeView.loadLabels()
 
     def saveImageSamplesStart(self) -> None:
         """Saves images to the `exportRootPath`"""
@@ -203,10 +201,10 @@ class DatasetLoader(AbstractTabWidget):
             filterPresets=SharedValues().filterPresets,
             labelsDict=SharedValues().labelsDict,
             exportRootPath=SharedValues().datasetExportPath,
-            applyFilters=self.exportToolbar.applyFiltersCheckBox.isChecked(),
-            separateByClasses=self.exportToolbar.separateByClassesCheckBox.isChecked(),
-            generateNameFromClass=self.exportToolbar.generateNameCheckBox.isChecked(),
-            trainDataPercentage=self.exportToolbar.trainDataPercentageSpinBox.value(),
+            applyFilters=self.ui.genSyntheticCheckBox.isChecked(),
+            separateByClasses=self.ui.separateCheckBox.isChecked(),
+            generateNameFromClass=self.ui.genNamesCheckBox.isChecked(),
+            trainDataPercentage=self.ui.trainPercentSpinBox.value(),
         )
         self.worker.moveToThread(self.workerThread)
 
@@ -218,10 +216,9 @@ class DatasetLoader(AbstractTabWidget):
         self.worker.finished.connect(self.worker.deleteLater)
         self.workerThread.finished.connect(self.workerThread.deleteLater)
 
-        self.exportToolbar.progressBar.setEnabled(True)
-        self.exportToolbar.setEnabled(False)
-        self.importToolbar.setEnabled(False)
-        self.datasetInfoToolbar.setEnabled(False)
+        self.ui.exportWidget.setEnabled(True)
+        self.ui.importExportWidget.setEnabled(False)
+        self.ui.detailsWidget.setEnabled(False)
         self.setParentEnabled_fn(False)
 
         self.workerThread.start()
@@ -232,28 +229,20 @@ class DatasetLoader(AbstractTabWidget):
 
     def loadSettings(self):
         settings = SharedValues().settings.dataset
-        self.exportToolbar.trainDataPercentageSpinBox.setValue(
-            min(settings.trainDataPercent, 100)
-        )
+        self.ui.trainPercentSpinBox.setValue(min(settings.trainDataPercent, 100))
 
-        self.exportToolbar.applyFiltersCheckBox.setChecked(settings.generateSynthetic)
-        self.exportToolbar.generateNameCheckBox.setChecked(settings.generateNames)
-        self.exportToolbar.separateByClassesCheckBox.setChecked(
-            settings.separateToSubdirectories
-        )
-        self.importToolbar.importPathTextEdit.setText(settings.importPath)
+        self.ui.genSyntheticCheckBox.setChecked(settings.generateSynthetic)
+        self.ui.genNamesCheckBox.setChecked(settings.generateNames)
+        self.ui.separateCheckBox.setChecked(settings.separateToSubdirectories)
+        self.ui.importLineEdit.setText(settings.importPath)
 
     def updateSettings(self):
         settings = SharedValues().settings.dataset
-        settings.separateToSubdirectories = (
-            self.exportToolbar.separateByClassesCheckBox.isChecked()
-        )
-        settings.generateNames = self.exportToolbar.generateNameCheckBox.isChecked()
-        settings.generateSynthetic = self.exportToolbar.applyFiltersCheckBox.isChecked()
-        settings.trainDataPercent = (
-            self.exportToolbar.trainDataPercentageSpinBox.value()
-        )
-        settings.importPath = self.importToolbar.importPathTextEdit.text()
+        settings.separateToSubdirectories = self.ui.separateCheckBox.isChecked()
+        settings.generateNames = self.ui.genNamesCheckBox.isChecked()
+        settings.generateSynthetic = self.ui.genSyntheticCheckBox.isChecked()
+        settings.trainDataPercent = self.ui.trainPercentSpinBox.value()
+        settings.importPath = self.ui.importLineEdit.text()
 
     #######################################################
     # Statistics
@@ -277,7 +266,13 @@ class DatasetLoader(AbstractTabWidget):
         sVals.statistics.classes = len(SharedValues().labelsDict)
         sVals.statistics.imageSamples = len(SharedValues().imageSamples)
 
-        self.datasetInfoToolbar.updateStatistics()
+        self.ui.labeledLineEdit.setText(f"{sVals.statistics.labelBoxes}")
+        self.ui.imageSamplesLineEdit.setText(f"{sVals.statistics.imageSamples}")
+        self.ui.annotatedLineEdit.setText(f"{sVals.statistics.labeledSamples}")
+        self.ui.emptySamplesLineEdit.setText(f"{sVals.statistics.emptySamples}")
+        self.ui.totalClassesLineEdit.setText(f"{sVals.statistics.classes}")
+        self.ui.labelBoxesLineEdit.setText(f"{sVals.statistics.labelBoxes}")
+
         pass
 
     #######################################################
@@ -285,17 +280,18 @@ class DatasetLoader(AbstractTabWidget):
     #######################################################
 
     def tabSelected(self) -> None:
-        self.incorrectLabels = self.importToolbar.treeView.loadSamplesFull(
-            restoreVerticalPosition=True
+        self.incorrectLabels = self.ui.imageSampleTreeView.loadSamples(
+            restoreVerticalPosition=True, showFull=True
         )
-        self.datasetInfoToolbar.treeView.loadLabels()
-        self.exportToolbar.btnExport.setDisabled(self.incorrectLabels)
+        self.ui.classesTreeView.loadLabels()
+        self.ui.exportButton.setDisabled(self.incorrectLabels)
         if self.incorrectLabels:
-            self.exportToolbar.btnExport.setText(
-                "Start Export (disabled until default labels are replaced)"
+            self.ui.exportButton.setText(
+                "Export (disabled until default labels are replaced)"
             )
         else:
-            self.exportToolbar.btnExport.setText("Start Export")
+            self.ui.exportButton.setText("Export")
 
     def tabClosed(self) -> None:
+        """Method called when tab was closed, another tab was clicked."""
         pass
