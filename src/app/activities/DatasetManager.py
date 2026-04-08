@@ -7,7 +7,7 @@ Description:
     Widget containing functionality for loading and exporting image datasets.
 """
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtWidgets
 from PySide6.QtCore import Slot, Signal
 
 import os
@@ -41,7 +41,11 @@ class DatasetManager(AbstractTabWidget):
         self.setParentEnabled_fn = setTabsEnabled_fn
         self.dataYamlPath: str | None = None
         self.incorrectLabels: bool = True
+
         self.imageDataset = ImageDataset(self.screenScaleText_fn)
+        self.imageDataset.importFinished.connect(self.importFinished)
+        self.imageDataset.exportFinished.connect(self.exportFinished)
+        self.imageDataset.progressUpdate.connect(self.progressUpdate)
 
         self._connectUI()
 
@@ -87,27 +91,32 @@ class DatasetManager(AbstractTabWidget):
         path = Path(self.ui.importLineEdit.text())
 
         if self.ui.importLineEdit.text() == "" or not path.is_dir():
-            QtWidgets.QMessageBox.warning(
-                self, "Warning", "Not a valid path for import dataset."
-            )
+            QtWidgets.QMessageBox.warning(self, "Warning", "Not a valid path for import dataset.")
+            return
 
         SharedValues().imageSamples.clear()
         self.onImportStart.emit()
-        self.onImportEnded.emit()
 
+        self.ui.exportProgressBar.setEnabled(True)
+        self.ui.importExportWidget.setEnabled(False)
+        self.ui.detailsWidget.setEnabled(False)
+        self.setParentEnabled_fn(False)
         try:
-            self.imageDataset.loadImageSamples(
-                SharedValues().datasetImportPath,
-                SharedValues().imageSamples,
-                SharedValues().labelsDict,
-            )
+            self.progressReset()
+            self.imageDataset.importDataset()
 
-            self.updateDataYaml()
-
-            self.ui.imageSampleTreeView.loadSamples(showFull=True)
-            self.onImportEnded.emit()
         except Exception as e:
             QtWidgets.QMessageBox.warning(self, "Error", e.__str__())
+            self.exportFinished()
+
+    @Slot()
+    def importFinished(self):
+        self.updateDataYaml()
+        self.onImportEnded.emit()
+        self.calculateStatistics(skipBoxesAndLabels=True)
+        self.exportFinished()
+        self.progressUpdate(100)
+        self.ui.imageSampleTreeView.loadSamples(showFull=True)
 
     #######################################################
     # Exporting dataset
@@ -131,6 +140,7 @@ class DatasetManager(AbstractTabWidget):
             os.makedirs(newExportPath, exist_ok=True)
             # SharedValues().datasetExportPath =  self.ui.exportLineEdit.text() called automatically
             self.ui.exportLineEdit.setText(str(newExportPath.resolve()))
+            SharedValues().datasetExportPath = self.ui.exportLineEdit.text()
         else:
             if exportPath.exists():
                 if not exportPath.is_dir():
@@ -143,22 +153,52 @@ class DatasetManager(AbstractTabWidget):
             else:
                 exportPath.mkdir(exist_ok=True)
 
-        self.saveImageSamplesStart()
+        if (
+            not self.ui.exportOriginalCheckBox.isChecked()
+            and not self.ui.genSyntheticCheckBox.isChecked()
+        ):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Wrong export configuration",
+                "'Export original image' and 'Generate synthetic data' are disabled, there is nothing to export!",
+            )
+            return
+
+        if len(SharedValues().imageSamples) <= 0:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                "Dataset is empty",
+            )
+            return
+
+        self.ui.exportProgressBar.setEnabled(True)
+        self.ui.importExportWidget.setEnabled(False)
+        self.ui.detailsWidget.setEnabled(False)
+        self.setParentEnabled_fn(False)
+
+        self.progressReset()
+
+        self.imageDataset.exportDataset(
+            trainDataPercentage=self.ui.trainPercentSpinBox.value(),
+            numOfWorkers=self.ui.workerThreadsSpinBox.value(),
+            generateSynthetic=self.ui.genSyntheticCheckBox.isChecked(),
+            separateByClasses=self.ui.separateCheckBox.isChecked(),
+            generateNameFromClass=self.ui.genNamesCheckBox.isChecked(),
+            exportOriginal=self.ui.exportOriginalCheckBox.isChecked(),
+        )
 
     @Slot(str)
     def exportPathChanged(self, text: str) -> None:
         SharedValues().datasetExportPath = text
 
-    @Slot(int)
-    def exportProgressUpdate(self, progress: int) -> None:
-        self.ui.exportProgressBar.setValue(progress)
+    @Slot(float)
+    def progressUpdate(self, value: int) -> None:
+        self.ui.exportProgressBar.setValue(value)
 
     @Slot()
-    def exportProgressDone(self) -> None:
-        self.ui.exportWidget.setEnabled(False)
-        self.ui.importExportWidget.setEnabled(True)
-        self.ui.detailsWidget.setEnabled(True)
-        self.setParentEnabled_fn(True)
+    def progressReset(self) -> None:
+        self.ui.exportProgressBar.setValue(0)
 
     def updateDataYaml(self) -> None:
         """
@@ -167,7 +207,7 @@ class DatasetManager(AbstractTabWidget):
         """
         path = Path(SharedValues().datasetImportPath)
 
-        self.ui.dataPathLabel.setText(path.name)
+        self.ui.dataPathLineEdit.setText(path.name)
 
         self.ui.valLineEdit.setText("images/val")
         self.ui.trainLineEdit.setText("images/train")
@@ -184,44 +224,12 @@ class DatasetManager(AbstractTabWidget):
 
         self.ui.classesTreeView.loadLabels()
 
-    def saveImageSamplesStart(self) -> None:
-        """Saves images to the `exportRootPath`"""
-        self.workerThread = QtCore.QThread()
-
-        if SharedValues().datasetExportPath == "":
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Error",
-                'Export root path is ""',
-            )
-            return
-
-        self.worker = ExportWorker(
-            imageSamples=SharedValues().imageSamples,
-            filterPresets=SharedValues().filterPresets,
-            labelsDict=SharedValues().labelsDict,
-            exportRootPath=SharedValues().datasetExportPath,
-            applyFilters=self.ui.genSyntheticCheckBox.isChecked(),
-            separateByClasses=self.ui.separateCheckBox.isChecked(),
-            generateNameFromClass=self.ui.genNamesCheckBox.isChecked(),
-            trainDataPercentage=self.ui.trainPercentSpinBox.value(),
-        )
-        self.worker.moveToThread(self.workerThread)
-
-        self.workerThread.started.connect(self.worker.run)
-        self.worker.progress.connect(self.exportProgressUpdate)
-        self.worker.finished.connect(self.exportProgressDone)
-
-        self.worker.finished.connect(self.workerThread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.workerThread.finished.connect(self.workerThread.deleteLater)
-
-        self.ui.exportWidget.setEnabled(True)
-        self.ui.importExportWidget.setEnabled(False)
-        self.ui.detailsWidget.setEnabled(False)
-        self.setParentEnabled_fn(False)
-
-        self.workerThread.start()
+    @Slot()
+    def exportFinished(self) -> None:
+        self.ui.exportProgressBar.setEnabled(False)
+        self.ui.importExportWidget.setEnabled(True)
+        self.ui.detailsWidget.setEnabled(True)
+        self.setParentEnabled_fn(True)
 
     #######################################################
     # Settings
@@ -235,6 +243,8 @@ class DatasetManager(AbstractTabWidget):
         self.ui.genNamesCheckBox.setChecked(settings.generateNames)
         self.ui.separateCheckBox.setChecked(settings.separateToSubdirectories)
         self.ui.importLineEdit.setText(settings.importPath)
+        self.ui.workerThreadsSpinBox.setValue(settings.workers)
+        self.ui.exportOriginalCheckBox.setChecked(settings.exportOriginal)
 
     def updateSettings(self):
         settings = SharedValues().settings.dataset
@@ -244,36 +254,41 @@ class DatasetManager(AbstractTabWidget):
         settings.trainDataPercent = self.ui.trainPercentSpinBox.value()
         settings.importPath = self.ui.importLineEdit.text()
 
+        settings.workers = self.ui.workerThreadsSpinBox.value()
+        settings.exportOriginal = self.ui.exportOriginalCheckBox.isChecked()
+
     #######################################################
     # Statistics
     #######################################################
     @Slot()
-    def calculateStatistics(self):
+    def calculateStatistics(self, skipBoxesAndLabels: bool = False):
         sVals = SharedValues()
 
-        sVals.statistics.emptySamples = 0
-        sVals.statistics.labelBoxes = 0
+        if skipBoxesAndLabels:
+            sVals.statistics.emptySamples = 0
+            sVals.statistics.labelBoxes = 0
 
-        for sample in SharedValues().imageSamples:
-            sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
-            boxes = len(sample.labelBoxes)
+            for sample in SharedValues().imageSamples:
+                sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
+                boxes = len(sample.labelBoxes)
 
-            if boxes == 0:
-                sVals.statistics.emptySamples += 1
-            else:
-                sVals.statistics.labelBoxes += boxes
+                if boxes == 0:
+                    sVals.statistics.emptySamples += 1
+                else:
+                    sVals.statistics.labelBoxes += boxes
 
-        sVals.statistics.classes = len(SharedValues().labelsDict)
-        sVals.statistics.imageSamples = len(SharedValues().imageSamples)
+            sVals.statistics.classes = len(SharedValues().labelsDict)
+            sVals.statistics.imageSamples = len(SharedValues().imageSamples)
+            self.ui.emptySamplesLineEdit.setText(f"{sVals.statistics.emptySamples}")
+            self.ui.labeledLineEdit.setText(f"{sVals.statistics.labelBoxes}")
 
-        self.ui.labeledLineEdit.setText(f"{sVals.statistics.labelBoxes}")
         self.ui.imageSamplesLineEdit.setText(f"{sVals.statistics.imageSamples}")
         self.ui.annotatedLineEdit.setText(f"{sVals.statistics.labeledSamples}")
-        self.ui.emptySamplesLineEdit.setText(f"{sVals.statistics.emptySamples}")
         self.ui.totalClassesLineEdit.setText(f"{sVals.statistics.classes}")
-        self.ui.labelBoxesLineEdit.setText(f"{sVals.statistics.labelBoxes}")
 
-        pass
+        self.ui.trainSamplesLineEdit.setText(f"{sVals.statistics.trainSamples}")
+        self.ui.valSamplesLineEdit.setText(f"{sVals.statistics.valSamples}")
+        self.ui.testSamplesLineEdit.setText(f"{sVals.statistics.testSamples}")
 
     #######################################################
     # Other
@@ -286,9 +301,7 @@ class DatasetManager(AbstractTabWidget):
         self.ui.classesTreeView.loadLabels()
         self.ui.exportButton.setDisabled(self.incorrectLabels)
         if self.incorrectLabels:
-            self.ui.exportButton.setText(
-                "Export (disabled until default labels are replaced)"
-            )
+            self.ui.exportButton.setText("Export (disabled until default labels are replaced)")
         else:
             self.ui.exportButton.setText("Export")
 

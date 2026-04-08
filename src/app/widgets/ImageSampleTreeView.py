@@ -44,7 +44,6 @@ class ImageSampleTreeView(QtWidgets.QTreeView):
         """
         if self.performingWarningAnalysis:
             return
-        print("checkImageSampleWarnings()")
         self.performingWarningAnalysis = True
 
         invalidLabels = False
@@ -87,9 +86,6 @@ class ImageSampleTreeView(QtWidgets.QTreeView):
         Loads image samples names, image path and label path into a `QTreeView`.
         Returns true if some of the samples contain incorrect labels
         """
-        print(
-            f"loadSamples(restoreVerticalPosition={restoreVerticalPosition}, showFull={showFull})"
-        )
         if self._imageSamples is None:
             raise Exception(
                 "ImageSampleTreeView: self._imageSamples was not set."

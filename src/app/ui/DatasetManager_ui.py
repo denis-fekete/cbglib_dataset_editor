@@ -108,6 +108,36 @@ class Ui_DatasetManager(object):
 
         self.statisticsForm.setWidget(0, QFormLayout.ItemRole.LabelRole, self.datasetStatisticsLabel)
 
+        self.trainSamplesLabel = QLabel(self.detailsWidget)
+        self.trainSamplesLabel.setObjectName(u"trainSamplesLabel")
+
+        self.statisticsForm.setWidget(7, QFormLayout.ItemRole.LabelRole, self.trainSamplesLabel)
+
+        self.valSamplesLabel = QLabel(self.detailsWidget)
+        self.valSamplesLabel.setObjectName(u"valSamplesLabel")
+
+        self.statisticsForm.setWidget(8, QFormLayout.ItemRole.LabelRole, self.valSamplesLabel)
+
+        self.testSamplesLabel = QLabel(self.detailsWidget)
+        self.testSamplesLabel.setObjectName(u"testSamplesLabel")
+
+        self.statisticsForm.setWidget(9, QFormLayout.ItemRole.LabelRole, self.testSamplesLabel)
+
+        self.trainSamplesLineEdit = QLineEdit(self.detailsWidget)
+        self.trainSamplesLineEdit.setObjectName(u"trainSamplesLineEdit")
+
+        self.statisticsForm.setWidget(7, QFormLayout.ItemRole.FieldRole, self.trainSamplesLineEdit)
+
+        self.valSamplesLineEdit = QLineEdit(self.detailsWidget)
+        self.valSamplesLineEdit.setObjectName(u"valSamplesLineEdit")
+
+        self.statisticsForm.setWidget(8, QFormLayout.ItemRole.FieldRole, self.valSamplesLineEdit)
+
+        self.testSamplesLineEdit = QLineEdit(self.detailsWidget)
+        self.testSamplesLineEdit.setObjectName(u"testSamplesLineEdit")
+
+        self.statisticsForm.setWidget(9, QFormLayout.ItemRole.FieldRole, self.testSamplesLineEdit)
+
 
         self.verticalLayout.addLayout(self.statisticsForm)
 
@@ -128,38 +158,42 @@ class Ui_DatasetManager(object):
 
         self.detailsForm.setWidget(0, QFormLayout.ItemRole.LabelRole, self.dataPathLabel)
 
+        self.dataPathLineEdit = QLineEdit(self.detailsWidget)
+        self.dataPathLineEdit.setObjectName(u"dataPathLineEdit")
+        self.dataPathLineEdit.setEnabled(False)
+
+        self.detailsForm.setWidget(0, QFormLayout.ItemRole.FieldRole, self.dataPathLineEdit)
+
         self.trainLabel = QLabel(self.detailsWidget)
         self.trainLabel.setObjectName(u"trainLabel")
 
         self.detailsForm.setWidget(1, QFormLayout.ItemRole.LabelRole, self.trainLabel)
+
+        self.trainLineEdit = QLineEdit(self.detailsWidget)
+        self.trainLineEdit.setObjectName(u"trainLineEdit")
+        self.trainLineEdit.setEnabled(False)
+
+        self.detailsForm.setWidget(1, QFormLayout.ItemRole.FieldRole, self.trainLineEdit)
 
         self.valLabel = QLabel(self.detailsWidget)
         self.valLabel.setObjectName(u"valLabel")
 
         self.detailsForm.setWidget(2, QFormLayout.ItemRole.LabelRole, self.valLabel)
 
+        self.valLineEdit = QLineEdit(self.detailsWidget)
+        self.valLineEdit.setObjectName(u"valLineEdit")
+        self.valLineEdit.setEnabled(False)
+
+        self.detailsForm.setWidget(2, QFormLayout.ItemRole.FieldRole, self.valLineEdit)
+
         self.testLabel = QLabel(self.detailsWidget)
         self.testLabel.setObjectName(u"testLabel")
 
         self.detailsForm.setWidget(3, QFormLayout.ItemRole.LabelRole, self.testLabel)
 
-        self.dataPathLineEdit = QLineEdit(self.detailsWidget)
-        self.dataPathLineEdit.setObjectName(u"dataPathLineEdit")
-
-        self.detailsForm.setWidget(0, QFormLayout.ItemRole.FieldRole, self.dataPathLineEdit)
-
-        self.trainLineEdit = QLineEdit(self.detailsWidget)
-        self.trainLineEdit.setObjectName(u"trainLineEdit")
-
-        self.detailsForm.setWidget(1, QFormLayout.ItemRole.FieldRole, self.trainLineEdit)
-
-        self.valLineEdit = QLineEdit(self.detailsWidget)
-        self.valLineEdit.setObjectName(u"valLineEdit")
-
-        self.detailsForm.setWidget(2, QFormLayout.ItemRole.FieldRole, self.valLineEdit)
-
         self.testLineEdit = QLineEdit(self.detailsWidget)
         self.testLineEdit.setObjectName(u"testLineEdit")
+        self.testLineEdit.setEnabled(False)
 
         self.detailsForm.setWidget(3, QFormLayout.ItemRole.FieldRole, self.testLineEdit)
 
@@ -190,109 +224,141 @@ class Ui_DatasetManager(object):
         self.importExportWidget.setSizePolicy(sizePolicy1)
         self.gridLayout = QGridLayout(self.importExportWidget)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.generate = QHBoxLayout()
-        self.generate.setObjectName(u"generate")
-        self.trainPercentSpinBox = QSpinBox(self.importExportWidget)
-        self.trainPercentSpinBox.setObjectName(u"trainPercentSpinBox")
-        self.trainPercentSpinBox.setMaximum(100)
-        self.trainPercentSpinBox.setValue(80)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.generate.addWidget(self.trainPercentSpinBox)
+        self.gridLayout.addItem(self.horizontalSpacer, 4, 0, 1, 3)
 
-        self.genSyntheticCheckBox = QCheckBox(self.importExportWidget)
-        self.genSyntheticCheckBox.setObjectName(u"genSyntheticCheckBox")
-
-        self.generate.addWidget(self.genSyntheticCheckBox)
-
-        self.genNamesCheckBox = QCheckBox(self.importExportWidget)
-        self.genNamesCheckBox.setObjectName(u"genNamesCheckBox")
-
-        self.generate.addWidget(self.genNamesCheckBox)
-
-        self.separateCheckBox = QCheckBox(self.importExportWidget)
-        self.separateCheckBox.setObjectName(u"separateCheckBox")
-
-        self.generate.addWidget(self.separateCheckBox)
-
-
-        self.gridLayout.addLayout(self.generate, 5, 0, 1, 3)
-
-        self.exportButton = QPushButton(self.importExportWidget)
-        self.exportButton.setObjectName(u"exportButton")
-
-        self.gridLayout.addWidget(self.exportButton, 8, 2, 1, 1)
-
-        self.exportOpenButton = QPushButton(self.importExportWidget)
-        self.exportOpenButton.setObjectName(u"exportOpenButton")
-
-        self.gridLayout.addWidget(self.exportOpenButton, 8, 1, 1, 1)
-
-        self.imageSampleTreeView = ImageSampleTreeView(self.importExportWidget)
-        self.imageSampleTreeView.setObjectName(u"imageSampleTreeView")
-
-        self.gridLayout.addWidget(self.imageSampleTreeView, 3, 0, 1, 3)
-
-        self.importButton = QPushButton(self.importExportWidget)
-        self.importButton.setObjectName(u"importButton")
-
-        self.gridLayout.addWidget(self.importButton, 1, 2, 1, 1)
-
-        self.importLineEdit = QLineEdit(self.importExportWidget)
-        self.importLineEdit.setObjectName(u"importLineEdit")
-
-        self.gridLayout.addWidget(self.importLineEdit, 1, 0, 1, 1)
-
-        self.importLabel = QLabel(self.importExportWidget)
+        self.importWidget = QWidget(self.importExportWidget)
+        self.importWidget.setObjectName(u"importWidget")
+        self.horizontalLayout_2 = QHBoxLayout(self.importWidget)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.importLabel = QLabel(self.importWidget)
         self.importLabel.setObjectName(u"importLabel")
 
-        self.gridLayout.addWidget(self.importLabel, 0, 0, 1, 1)
+        self.horizontalLayout_2.addWidget(self.importLabel)
 
-        self.importOpenButton = QPushButton(self.importExportWidget)
-        self.importOpenButton.setObjectName(u"importOpenButton")
 
-        self.gridLayout.addWidget(self.importOpenButton, 1, 1, 1, 1)
+        self.gridLayout.addWidget(self.importWidget, 0, 0, 1, 2)
 
         self.line = QFrame(self.importExportWidget)
         self.line.setObjectName(u"line")
         self.line.setFrameShape(QFrame.Shape.HLine)
         self.line.setFrameShadow(QFrame.Shadow.Sunken)
 
-        self.gridLayout.addWidget(self.line, 10, 0, 1, 3)
+        self.gridLayout.addWidget(self.line, 11, 0, 1, 3)
 
-        self.exportLabel = QLabel(self.importExportWidget)
-        self.exportLabel.setObjectName(u"exportLabel")
+        self.imageSampleTreeView = ImageSampleTreeView(self.importExportWidget)
+        self.imageSampleTreeView.setObjectName(u"imageSampleTreeView")
 
-        self.gridLayout.addWidget(self.exportLabel, 7, 0, 1, 1)
+        self.gridLayout.addWidget(self.imageSampleTreeView, 3, 0, 1, 3)
+
+        self.exportButton = QPushButton(self.importExportWidget)
+        self.exportButton.setObjectName(u"exportButton")
+
+        self.gridLayout.addWidget(self.exportButton, 9, 2, 1, 1)
+
+        self.importButton = QPushButton(self.importExportWidget)
+        self.importButton.setObjectName(u"importButton")
+
+        self.gridLayout.addWidget(self.importButton, 1, 2, 1, 1)
+
+        self.gridLayout_3 = QGridLayout()
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.genNamesCheckBox = QCheckBox(self.importExportWidget)
+        self.genNamesCheckBox.setObjectName(u"genNamesCheckBox")
+
+        self.gridLayout_3.addWidget(self.genNamesCheckBox, 2, 0, 1, 1)
+
+        self.trainPercentSpinBox = QSpinBox(self.importExportWidget)
+        self.trainPercentSpinBox.setObjectName(u"trainPercentSpinBox")
+        self.trainPercentSpinBox.setMaximum(100)
+        self.trainPercentSpinBox.setValue(80)
+
+        self.gridLayout_3.addWidget(self.trainPercentSpinBox, 0, 0, 1, 1)
+
+        self.genSyntheticCheckBox = QCheckBox(self.importExportWidget)
+        self.genSyntheticCheckBox.setObjectName(u"genSyntheticCheckBox")
+
+        self.gridLayout_3.addWidget(self.genSyntheticCheckBox, 2, 1, 1, 1)
+
+        self.separateCheckBox = QCheckBox(self.importExportWidget)
+        self.separateCheckBox.setObjectName(u"separateCheckBox")
+
+        self.gridLayout_3.addWidget(self.separateCheckBox, 0, 1, 1, 1)
+
+        self.workerThreadsSpinBox = QSpinBox(self.importExportWidget)
+        self.workerThreadsSpinBox.setObjectName(u"workerThreadsSpinBox")
+        self.workerThreadsSpinBox.setMinimum(1)
+        self.workerThreadsSpinBox.setMaximum(64)
+
+        self.gridLayout_3.addWidget(self.workerThreadsSpinBox, 2, 4, 1, 1)
+
+        self.exportOriginalCheckBox = QCheckBox(self.importExportWidget)
+        self.exportOriginalCheckBox.setObjectName(u"exportOriginalCheckBox")
+
+        self.gridLayout_3.addWidget(self.exportOriginalCheckBox, 0, 2, 1, 1)
+
+        self.workerThreadsLabel = QLabel(self.importExportWidget)
+        self.workerThreadsLabel.setObjectName(u"workerThreadsLabel")
+        self.workerThreadsLabel.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+
+        self.gridLayout_3.addWidget(self.workerThreadsLabel, 0, 4, 1, 1)
+
+
+        self.gridLayout.addLayout(self.gridLayout_3, 5, 0, 1, 3)
 
         self.exportLineEdit = QLineEdit(self.importExportWidget)
         self.exportLineEdit.setObjectName(u"exportLineEdit")
 
-        self.gridLayout.addWidget(self.exportLineEdit, 8, 0, 1, 1)
+        self.gridLayout.addWidget(self.exportLineEdit, 9, 0, 1, 1)
 
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.exportLabel = QLabel(self.importExportWidget)
+        self.exportLabel.setObjectName(u"exportLabel")
 
-        self.gridLayout.addItem(self.horizontalSpacer, 4, 0, 1, 3)
+        self.gridLayout.addWidget(self.exportLabel, 8, 0, 1, 1)
+
+        self.exportOpenButton = QPushButton(self.importExportWidget)
+        self.exportOpenButton.setObjectName(u"exportOpenButton")
+
+        self.gridLayout.addWidget(self.exportOpenButton, 9, 1, 1, 1)
+
+        self.importOpenButton = QPushButton(self.importExportWidget)
+        self.importOpenButton.setObjectName(u"importOpenButton")
+
+        self.gridLayout.addWidget(self.importOpenButton, 1, 1, 1, 1)
 
         self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.gridLayout.addItem(self.horizontalSpacer_2, 2, 0, 1, 3)
+
+        self.importLineEdit = QLineEdit(self.importExportWidget)
+        self.importLineEdit.setObjectName(u"importLineEdit")
+
+        self.gridLayout.addWidget(self.importLineEdit, 1, 0, 1, 1)
+
+        self.exportWorkersWidget = QWidget(self.importExportWidget)
+        self.exportWorkersWidget.setObjectName(u"exportWorkersWidget")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.exportWorkersWidget.sizePolicy().hasHeightForWidth())
+        self.exportWorkersWidget.setSizePolicy(sizePolicy2)
+        self.horizontalLayout_3 = QHBoxLayout(self.exportWorkersWidget)
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+
+        self.gridLayout.addWidget(self.exportWorkersWidget, 6, 0, 1, 2)
 
 
         self.gridLayout_2.addWidget(self.importExportWidget, 0, 2, 1, 1)
 
         self.exportWidget = QWidget(DatasetManager)
         self.exportWidget.setObjectName(u"exportWidget")
-        self.exportWidget.setEnabled(False)
+        self.exportWidget.setEnabled(True)
         self.horizontalLayout = QHBoxLayout(self.exportWidget)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.progressLabel = QLabel(self.exportWidget)
-        self.progressLabel.setObjectName(u"progressLabel")
-
-        self.horizontalLayout.addWidget(self.progressLabel)
-
         self.exportProgressBar = QProgressBar(self.exportWidget)
         self.exportProgressBar.setObjectName(u"exportProgressBar")
-        self.exportProgressBar.setEnabled(False)
+        self.exportProgressBar.setEnabled(True)
         self.exportProgressBar.setValue(0)
 
         self.horizontalLayout.addWidget(self.exportProgressBar)
@@ -316,22 +382,26 @@ class Ui_DatasetManager(object):
         self.classesLabel.setText(QCoreApplication.translate("DatasetManager", u"Total classes", None))
         self.imageLabelBoxesLabel.setText(QCoreApplication.translate("DatasetManager", u"Image label boxes count", None))
         self.datasetStatisticsLabel.setText(QCoreApplication.translate("DatasetManager", u"Dataset statistics:", None))
+        self.trainSamplesLabel.setText(QCoreApplication.translate("DatasetManager", u"Train samples", None))
+        self.valSamplesLabel.setText(QCoreApplication.translate("DatasetManager", u"Validation samples", None))
+        self.testSamplesLabel.setText(QCoreApplication.translate("DatasetManager", u"Test samples", None))
         self.calcStatisticsButton.setText(QCoreApplication.translate("DatasetManager", u"Calculate Statistics", None))
         self.datasetDetailsLabel.setText(QCoreApplication.translate("DatasetManager", u"Dataset details (data.yaml):", None))
         self.dataPathLabel.setText(QCoreApplication.translate("DatasetManager", u"path:", None))
         self.trainLabel.setText(QCoreApplication.translate("DatasetManager", u"train:", None))
         self.valLabel.setText(QCoreApplication.translate("DatasetManager", u"val:", None))
         self.testLabel.setText(QCoreApplication.translate("DatasetManager", u"test:", None))
+        self.importLabel.setText(QCoreApplication.translate("DatasetManager", u"Import path:", None))
+        self.exportButton.setText(QCoreApplication.translate("DatasetManager", u"Export", None))
+        self.importButton.setText(QCoreApplication.translate("DatasetManager", u"Import", None))
+        self.genNamesCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate names", None))
         self.trainPercentSpinBox.setPrefix(QCoreApplication.translate("DatasetManager", u"Traid data %:  ", None))
         self.genSyntheticCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate synthetic data", None))
-        self.genNamesCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate names", None))
         self.separateCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Separate into subdirectories", None))
-        self.exportButton.setText(QCoreApplication.translate("DatasetManager", u"Export", None))
-        self.exportOpenButton.setText(QCoreApplication.translate("DatasetManager", u"Open", None))
-        self.importButton.setText(QCoreApplication.translate("DatasetManager", u"Import", None))
-        self.importLabel.setText(QCoreApplication.translate("DatasetManager", u"Import path:", None))
-        self.importOpenButton.setText(QCoreApplication.translate("DatasetManager", u"Open", None))
+        self.exportOriginalCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Export original image", None))
+        self.workerThreadsLabel.setText(QCoreApplication.translate("DatasetManager", u"Export Worker threads:", None))
         self.exportLabel.setText(QCoreApplication.translate("DatasetManager", u"Export path:", None))
-        self.progressLabel.setText(QCoreApplication.translate("DatasetManager", u"Export Progress: ", None))
+        self.exportOpenButton.setText(QCoreApplication.translate("DatasetManager", u"Open", None))
+        self.importOpenButton.setText(QCoreApplication.translate("DatasetManager", u"Open", None))
     # retranslateUi
 

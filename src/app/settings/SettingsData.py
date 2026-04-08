@@ -20,6 +20,8 @@ class DatasetSettings:
     generateSynthetic: bool
     trainDataPercent: int
     importPath: str
+    workers: int
+    exportOriginal: bool
 
 
 @dataclass_json

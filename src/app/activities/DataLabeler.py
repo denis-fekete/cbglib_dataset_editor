@@ -113,7 +113,6 @@ class DataLabeler(AbstractTabWidget):
 
     def loadImageSample(self) -> None:
         """Loads `currentImageSample` image sample into current graphics scene and corrects size and zoom of screen"""
-        print("DEBUG: loadImageSample")
         self.currentImageSample.load(
             self.ui.selectedColorPicker.color,
             self.ui.unselectedColorPicker.color,
@@ -133,19 +132,9 @@ class DataLabeler(AbstractTabWidget):
 
         self.correctSceneAndView()
 
-        # reset warning on image samples tree view
-        # if self.currentImageSample is not None:
-        #     print(f"loadImageSample")
-        #     self.ui.imageSampleTreeView.checkImageSampleWarnings(
-        #         self.currentImageSample,
-        #         checkLabelBoxes=True,
-        #         checkImageLabelBoxes=False,
-        #     )
-
     def graphicsItemClicked(self) -> None:
         # reset warning on image samples tree view
         if self.currentImageSample is not None:
-            print(f"graphicsItemClicked")
             self.ui.imageSampleTreeView.checkImageSampleWarnings(
                 self.currentImageSample,
                 checkLabelBoxes=False,
@@ -210,7 +199,6 @@ class DataLabeler(AbstractTabWidget):
             self.currentImageSample.remove(self.ui.graphicsView.selectedItem)
             self._scene.removeItem(self.ui.graphicsView.selectedItem)
 
-            print(f"imageLabelBoxDeleteClicked")
             self.ui.imageSampleTreeView.checkImageSampleWarnings(
                 self.currentImageSample,
                 checkLabelBoxes=False,
@@ -253,7 +241,6 @@ class DataLabeler(AbstractTabWidget):
 
             # reset warning on image samples tree view
             if self.currentImageSample is not None:  # type: ignore
-                print(f"classLabelsChanged")
                 self.ui.imageSampleTreeView.checkImageSampleWarnings(
                     self.currentImageSample,
                     checkLabelBoxes=False,
@@ -348,7 +335,6 @@ class DataLabeler(AbstractTabWidget):
         """Slot called when `ImageSample`from QTreeView dataset was changed"""
         if self.ignoreImageSampleChanged:
             return
-        print("DEBUG: imageSampleChanged")
 
         if self.currentImageSample is not None:
             self.currentImageSample.unload(save=True)
@@ -363,7 +349,6 @@ class DataLabeler(AbstractTabWidget):
 
         clickedItemName = index.data()
         if clickedItemName is None:
-            print("Error: clickedItemName was not found in datasetItemSelected_slot()")
             return
 
         newCurrentImageSample: ImageSample = next(  # type: ignore
@@ -410,7 +395,6 @@ class DataLabeler(AbstractTabWidget):
 
     @Slot()
     def reloadImageSamplesTree(self) -> None:
-        print("Reloading samples")
         self.ui.imageSampleTreeView.loadSamples(restoreVerticalPosition=True)
         self.ui.labelSelectorTreeView.loadLabels()
 
@@ -530,7 +514,6 @@ class DataLabeler(AbstractTabWidget):
 
     def tabSelected(self) -> None:
         """Slot called on change of tabs"""
-        print(f"DataLabeler.tabSelected")
 
         self.ui.graphicsView.selectedItem = None
         if self.currentImageSample is not None:

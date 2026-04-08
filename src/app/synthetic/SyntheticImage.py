@@ -25,10 +25,13 @@ from .FilterPreset import FilterPreset
 class SyntheticImage:
     def __init__(self, invalidate_fn: Callable[[], None] | None = None) -> None:
         self.imageReference: ImageSample | None = None
-        self.filter: FilterPreset = FilterPreset()
+        self.filter: FilterPreset | None = None
         self.invalidate_fn: Callable[[], None] | None = invalidate_fn
         self.cvImage: cv.Mat | None = None
 
+        self.scale = 1.0
+        self.padX = 0
+        self.padY = 0
         self.updateReference()
 
     def save(
@@ -44,11 +47,16 @@ class SyntheticImage:
 
         className = self.imageReference.getClassName()
 
-        filterName = f"_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
-        filterName += f"_bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
-        filterName += f"_sat{self.filter.saturation}"
-        filterName += f"_spn{self.filter.sapNoise}_gn{self.filter.gaussianNoise}"
-        filterName = "_$f$_" + filterName
+        if self.filter.name == "default" or self.filter.name == "":
+            filterName = f"_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
+            filterName += (
+                f"_bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
+            )
+            filterName += f"_sat{self.filter.saturation}"
+            filterName += f"_spn{self.filter.sapNoise}_gn{self.filter.gaussianNoise}"
+            filterName = ".$f$_" + filterName
+        else:
+            filterName = ".$f$_" + self.filter.name
 
         fullImagePath = Path(exportImagePath)
 
@@ -64,44 +72,51 @@ class SyntheticImage:
                 + self.imageReference.imageExt
             )
         else:
-            fullImagePath /= (
-                self.imageReference.name + filterName + self.imageReference.imageExt
-            )
+            fullImagePath /= self.imageReference.name + filterName + self.imageReference.imageExt
+
+        if fullImagePath.exists():
+            fullImagePath = Path(fullImagePath.stem + "_1" + fullImagePath.suffix)
 
         cv.imwrite(fullImagePath.resolve()._str, self.cvImage)
 
         labelExt = (
-            self.imageReference.labelExt
-            if (self.imageReference.labelExt is not None)
-            else ".txt"
+            self.imageReference.labelExt if (self.imageReference.labelExt is not None) else ".txt"
         )
+
         fullLabelPath = Path(exportLabelPath)
 
         if separateByClasses:
             fullLabelPath /= className
 
+        fullLabelPath.mkdir(exist_ok=True)
+
         if hasher is not None:
             fullLabelPath /= (
-                self.imageReference.generateNameFromImage(className, hasher)
-                + filterName
-                + labelExt
+                self.imageReference.generateNameFromImage(className, hasher) + filterName + labelExt
             )
         else:
             fullLabelPath /= self.imageReference.name + filterName + labelExt
 
-        width = self.imageReference.width
-        height = self.imageReference.height
+        if fullLabelPath.exists():
+            fullLabelPath = Path(fullLabelPath.stem + "_1" + fullLabelPath.suffix)
 
         with open(fullLabelPath, "w") as f:
             for labelBox in self.imageReference.labelBoxes:
                 x, y, w, h = labelBox.getDimensionTuple()
 
                 if self.filter.hFlip:
-                    x = width - x
+                    x = self.imageReference.width - x
                 if self.filter.vFlip:
-                    y = height - y
+                    y = self.imageReference.height - y
 
-                x, y, w, h = Pixels2Norm(x, y, w, h, width, height)
+                x, y, w, h = Pixels2Norm(
+                    x * self.scale + self.padX,
+                    y * self.scale + self.padY,
+                    w * self.scale,
+                    h * self.scale,
+                    self.width(),
+                    self.height(),
+                )
 
                 f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
 
@@ -131,34 +146,63 @@ class SyntheticImage:
         self.applyFilter()
 
     def rect(self) -> QRectF:
-        return QRectF(0, 0, self.imageReference.width, self.imageReference.height)
+        if self.filter.forceResolution:
+            return QRectF(0, 0, self.filter.resolution, self.filter.resolution)
+        else:
+            return QRectF(0, 0, self.imageReference.width, self.imageReference.height)
 
     def width(self) -> float:
-        return self.imageReference.width
+        if self.filter.forceResolution:
+            return self.filter.resolution
+        else:
+            return self.imageReference.width
 
     def height(self) -> float:
-        return self.imageReference.height
+        if self.filter.forceResolution:
+            return self.filter.resolution
+        else:
+            return self.imageReference.height
 
-    def applyFilter(self) -> None:
+    def rescaleAndLetterbox(self, img: cv.Mat) -> MatLike:
         """
-        Applies `FilterPreset` onto the `ImageSample` from `self.imageReference`. Upon applying
-        filters sets `self.cvImage` and calls `self.invalidate_fn` invalidating QGraphicsScene
-        showing `SyntheticImage`
+        Changes the resolution of image based on the filter.resolution. This will not force both
+        resolutions and result in deformation of image, instead a image will be scaled by the bigger
+        dimension. If filter.applyLetterbox is set, aspect ratio of 1:1 will be force and image will
+        be padded with filters.paddingRed/Blue/Green values or with static noise
         """
-        if self.imageReference is None:
-            return
+        srcH = img.shape[0]
+        srcW = img.shape[1]
 
-        original: cv.Mat | None = self.imageReference.getCvImage()
+        self.scale = self.filter.resolution / max(srcH, srcW)
+        newW, newH = int(srcW * self.scale), int(srcH * self.scale)
+        resized = cv.resize(img, (newW, newH))
 
-        if original is None:
-            return
+        if self.filter.applyLetterbox:
+            self.padX = (self.filter.resolution - newW) // 2
+            self.padY = (self.filter.resolution - newH) // 2
 
+            padded = cv.copyMakeBorder(
+                resized,
+                self.padY,
+                self.filter.resolution - newH - self.padY,
+                self.padX,
+                self.filter.resolution - newW - self.padX,
+                cv.BORDER_CONSTANT,
+                value=(
+                    self.filter.paddingRed,
+                    self.filter.paddingGreen,
+                    self.filter.paddingBlue,
+                ),
+            )
+            return padded
+
+        return resized
+
+    def photometricFilters(self, img: cv.Mat | MatLike) -> MatLike:
         # apply contrast and brightness
-        img: MatLike = cv.convertScaleAbs(
-            original, alpha=self.filter.contrast / 100, beta=self.filter.brightness
-        )
+        img = cv.convertScaleAbs(img, alpha=self.filter.contrast / 100, beta=self.filter.brightness)
 
-        img: MatLike = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+        img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
         # apply saturation
         h, s, v = cv.split(img)
 
@@ -168,38 +212,66 @@ class SyntheticImage:
         img = cv.merge([h, s, v])  # type: ignore
         img = cv.cvtColor(img, cv.COLOR_HSV2BGR)
 
+        return img
+
+    def generateSapNoise(self, img: cv.Mat | MatLike) -> MatLike:
+        width, height = self.width(), self.height()
+        noisePixels = int((self.filter.sapNoise / 10.0) * (width * height / 100))
+        noiseRows = np.random.randint(0, int(height) - 1, noisePixels)
+        noiseCols = np.random.randint(0, int(width) - 1, noisePixels)
+
+        img[noiseRows, noiseCols] = 255
+
+        noiseRows = np.random.randint(0, int(height) - 1, noisePixels)
+        noiseCols = np.random.randint(0, int(width) - 1, noisePixels)
+
+        img[noiseRows, noiseCols] = 0
+        return img
+
+    def generateGaussianNoise(self, img: cv.Mat | MatLike) -> MatLike:
+        img = img.astype(np.float32)
+        noiseMask = np.random.normal(  # type: ignore
+            0, self.filter.gaussianNoise / 10.0, img.shape
+        ).astype(
+            np.float32
+        )  # type: ignore
+        img += noiseMask  # type: ignore
+        img = np.clip(img, 0, 255).astype(np.uint8)  # type: ignore
+        return img
+
+    def applyFilter(self) -> None:
+        """
+        Applies `FilterPreset` onto the `ImageSample` from `self.imageReference`. Upon applying
+        filters sets `self.cvImage` and calls `self.invalidate_fn` invalidating QGraphicsScene
+        showing `SyntheticImage`
+        """
+        if self.imageReference is None or self.filter is None:
+            return
+
+        img: cv.Mat | None | MatLike = self.imageReference.getCvImage()
+
+        if img is None:
+            return
+
+        if self.filter.forceResolution:
+            img = self.rescaleAndLetterbox(img)
+        else:
+            self.scale = 1.0
+            self.padX = 0
+            self.padY = 0
+
+        img = self.photometricFilters(img)
+
         # apply blur
         if self.filter.blur > 0:
-            blurValue = (
-                self.filter.blur
-                if (self.filter.blur % 2 == 1)
-                else self.filter.blur + 1
-            )
-            img = cv.medianBlur(img, blurValue)
+            blurValue = self.filter.blur if (self.filter.blur % 2 == 1) else self.filter.blur + 1
+            img = cv.GaussianBlur(img, (blurValue, blurValue), 0)
 
-        # start here
         if self.filter.sapNoise > 0:
-            width, height = self.width(), self.height()
-            noisePixels = int((self.filter.sapNoise / 10.0) * (width * height / 100))
-            noiseRows = np.random.randint(0, int(height) - 1, noisePixels)
-            noiseCols = np.random.randint(0, int(width) - 1, noisePixels)
-
-            img[noiseRows, noiseCols] = 255
-
-            noiseRows = np.random.randint(0, int(height) - 1, noisePixels)
-            noiseCols = np.random.randint(0, int(width) - 1, noisePixels)
-
-            img[noiseRows, noiseCols] = 0
+            img = self.generateSapNoise(img)
 
         if self.filter.gaussianNoise > 0:
-            img = img.astype(np.float32)
-            noiseMask = np.random.normal(  # type: ignore
-                0, self.filter.gaussianNoise / 10.0, img.shape
-            ).astype(
-                np.float32
-            )  # type: ignore
-            img += noiseMask  # type: ignore
-            img = np.clip(img, 0, 255).astype(np.uint8)  # type: ignore
+            img = self.generateGaussianNoise(img)
 
         if self.filter.hFlip and self.filter.vFlip:
             img = cv.flip(img, -1)

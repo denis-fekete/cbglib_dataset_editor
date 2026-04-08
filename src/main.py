@@ -61,12 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.modelTrainerWidget = ModelTrainer(self.setTabsEnabled)
 
-        self.datasetWidget.onImportStart.connect(
-            self.dataLabelerWidget.clearCurrentImageSample
-        )
-        self.datasetWidget.onImportEnded.connect(
-            self.dataLabelerWidget.reloadImageSamplesTree
-        )
+        self.datasetWidget.onImportStart.connect(self.dataLabelerWidget.clearCurrentImageSample)
+        self.datasetWidget.onImportEnded.connect(self.dataLabelerWidget.reloadImageSamplesTree)
 
         self.ui.tabWidget.addTab(self.datasetWidget, "Dataset")
         self.ui.tabWidget.addTab(self.dataLabelerWidget, "Image labeling")
@@ -106,9 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
             with open(r"settings.json", "r", encoding="utf-8") as f:
                 SharedValues().settings = AppSettings.from_json(f.read())  # type: ignore
         except:
-            with open(
-                r"src/app/settings/default_settings.json", "r", encoding="utf-8"
-            ) as f:
+            with open(r"src/app/settings/default_settings.json", "r", encoding="utf-8") as f:
                 SharedValues().settings = AppSettings.from_json(f.read())  # type: ignore
 
         SharedValues().filterPresets = SharedValues().settings.syntheticSettings.filters

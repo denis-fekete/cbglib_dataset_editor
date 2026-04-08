@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QGridLayout, QHBoxLayout
     QSizePolicy, QSlider, QSpacerItem, QSpinBox,
     QWidget)
 
+from app.widgets.ColorPicker import ColorPicker
 from app.widgets.FilterPresetTreeView import FilterPresetTreeView
 from app.widgets.ZoomGraphicsView import ZoomGraphicsView
 
@@ -41,9 +42,14 @@ class Ui_SyntheticFiltersEditor(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, -115, 286, 668))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 286, 902))
         self.gridLayout = QGridLayout(self.scrollAreaWidgetContents_2)
         self.gridLayout.setObjectName(u"gridLayout")
+        self.applyFiltersButton = QPushButton(self.scrollAreaWidgetContents_2)
+        self.applyFiltersButton.setObjectName(u"applyFiltersButton")
+
+        self.gridLayout.addWidget(self.applyFiltersButton, 1, 0, 1, 1)
+
         self.filterSettingsWidget = QWidget(self.scrollAreaWidgetContents_2)
         self.filterSettingsWidget.setObjectName(u"filterSettingsWidget")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
@@ -55,26 +61,74 @@ class Ui_SyntheticFiltersEditor(object):
         self.filterSettingsWidget.setMaximumSize(QSize(16777215, 16777215))
         self.gridLayout_2 = QGridLayout(self.filterSettingsWidget)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.brightnessLabel = QLabel(self.filterSettingsWidget)
+        self.brightnessLabel.setObjectName(u"brightnessLabel")
 
-        self.gridLayout_2.addItem(self.horizontalSpacer_6, 18, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.brightnessLabel, 24, 0, 1, 1)
+
+        self.brightnessSlider = QSlider(self.filterSettingsWidget)
+        self.brightnessSlider.setObjectName(u"brightnessSlider")
+        self.brightnessSlider.setMinimum(-50)
+        self.brightnessSlider.setMaximum(50)
+        self.brightnessSlider.setOrientation(Qt.Orientation.Horizontal)
+
+        self.gridLayout_2.addWidget(self.brightnessSlider, 25, 0, 1, 2)
+
+        self.sapLabel = QLabel(self.filterSettingsWidget)
+        self.sapLabel.setObjectName(u"sapLabel")
+
+        self.gridLayout_2.addWidget(self.sapLabel, 27, 0, 1, 1)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_2, 20, 0, 1, 2)
+
+        self.letterboxingPaddingLabel = QLabel(self.filterSettingsWidget)
+        self.letterboxingPaddingLabel.setObjectName(u"letterboxingPaddingLabel")
+
+        self.gridLayout_2.addWidget(self.letterboxingPaddingLabel, 9, 0, 1, 2)
+
+        self.horizontalSpacer_5 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_5, 29, 0, 1, 2)
+
+        self.saturationLabel = QLabel(self.filterSettingsWidget)
+        self.saturationLabel.setObjectName(u"saturationLabel")
+
+        self.gridLayout_2.addWidget(self.saturationLabel, 18, 0, 1, 1)
+
+        self.applyLetterBoxingCheckBox = QCheckBox(self.filterSettingsWidget)
+        self.applyLetterBoxingCheckBox.setObjectName(u"applyLetterBoxingCheckBox")
+
+        self.gridLayout_2.addWidget(self.applyLetterBoxingCheckBox, 8, 0, 1, 1)
+
+        self.horizontalSpacer_7 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_7, 34, 0, 1, 2)
+
+        self.blurSpinBox = QSpinBox(self.filterSettingsWidget)
+        self.blurSpinBox.setObjectName(u"blurSpinBox")
+        self.blurSpinBox.setMaximum(100)
+        self.blurSpinBox.setSingleStep(3)
+
+        self.gridLayout_2.addWidget(self.blurSpinBox, 14, 1, 1, 1)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer, 17, 0, 1, 2)
 
         self.gaussianSpinBox = QSpinBox(self.filterSettingsWidget)
         self.gaussianSpinBox.setObjectName(u"gaussianSpinBox")
         self.gaussianSpinBox.setMaximum(1000)
 
-        self.gridLayout_2.addWidget(self.gaussianSpinBox, 16, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.gaussianSpinBox, 30, 1, 1, 1)
 
-        self.blurSpinBox = QSpinBox(self.filterSettingsWidget)
-        self.blurSpinBox.setObjectName(u"blurSpinBox")
-        self.blurSpinBox.setMaximum(100)
-        self.blurSpinBox.setSingleStep(2)
+        self.brightnessSpinBox = QSpinBox(self.filterSettingsWidget)
+        self.brightnessSpinBox.setObjectName(u"brightnessSpinBox")
+        self.brightnessSpinBox.setMinimum(-50)
+        self.brightnessSpinBox.setMaximum(50)
 
-        self.gridLayout_2.addWidget(self.blurSpinBox, 1, 1, 1, 1)
-
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_2.addItem(self.horizontalSpacer_2, 6, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.brightnessSpinBox, 24, 1, 1, 1)
 
         self.saturationSlider = QSlider(self.filterSettingsWidget)
         self.saturationSlider.setObjectName(u"saturationSlider")
@@ -84,25 +138,7 @@ class Ui_SyntheticFiltersEditor(object):
         self.saturationSlider.setOrientation(Qt.Orientation.Horizontal)
         self.saturationSlider.setTickPosition(QSlider.TickPosition.NoTicks)
 
-        self.gridLayout_2.addWidget(self.saturationSlider, 5, 0, 1, 2)
-
-        self.sapSpinBox = QSpinBox(self.filterSettingsWidget)
-        self.sapSpinBox.setObjectName(u"sapSpinBox")
-        self.sapSpinBox.setMaximum(1000)
-
-        self.gridLayout_2.addWidget(self.sapSpinBox, 13, 1, 1, 1)
-
-        self.sapLabel = QLabel(self.filterSettingsWidget)
-        self.sapLabel.setObjectName(u"sapLabel")
-
-        self.gridLayout_2.addWidget(self.sapLabel, 13, 0, 1, 1)
-
-        self.gaussianSlider = QSlider(self.filterSettingsWidget)
-        self.gaussianSlider.setObjectName(u"gaussianSlider")
-        self.gaussianSlider.setMaximum(1000)
-        self.gaussianSlider.setOrientation(Qt.Orientation.Horizontal)
-
-        self.gridLayout_2.addWidget(self.gaussianSlider, 17, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.saturationSlider, 19, 0, 1, 2)
 
         self.contrastSlider = QSlider(self.filterSettingsWidget)
         self.contrastSlider.setObjectName(u"contrastSlider")
@@ -112,15 +148,45 @@ class Ui_SyntheticFiltersEditor(object):
         self.contrastSlider.setOrientation(Qt.Orientation.Horizontal)
         self.contrastSlider.setTickPosition(QSlider.TickPosition.NoTicks)
 
-        self.gridLayout_2.addWidget(self.contrastSlider, 8, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.contrastSlider, 22, 0, 1, 2)
 
-        self.brightnessSlider = QSlider(self.filterSettingsWidget)
-        self.brightnessSlider.setObjectName(u"brightnessSlider")
-        self.brightnessSlider.setMinimum(-50)
-        self.brightnessSlider.setMaximum(50)
-        self.brightnessSlider.setOrientation(Qt.Orientation.Horizontal)
+        self.paddingColorPicker = ColorPicker(self.filterSettingsWidget)
+        self.paddingColorPicker.setObjectName(u"paddingColorPicker")
 
-        self.gridLayout_2.addWidget(self.brightnessSlider, 11, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.paddingColorPicker, 10, 0, 1, 2)
+
+        self.horizontalSpacer_9 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_9, 13, 0, 1, 2)
+
+        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_6, 32, 0, 1, 2)
+
+        self.contrastSpinBox = QSpinBox(self.filterSettingsWidget)
+        self.contrastSpinBox.setObjectName(u"contrastSpinBox")
+        self.contrastSpinBox.setMinimum(50)
+        self.contrastSpinBox.setMaximum(150)
+        self.contrastSpinBox.setValue(100)
+
+        self.gridLayout_2.addWidget(self.contrastSpinBox, 21, 1, 1, 1)
+
+        self.blurLabel = QLabel(self.filterSettingsWidget)
+        self.blurLabel.setObjectName(u"blurLabel")
+
+        self.gridLayout_2.addWidget(self.blurLabel, 14, 0, 1, 1)
+
+        self.horizontalSpacer_4 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_4, 26, 0, 1, 2)
+
+        self.saturationSpinBox = QSpinBox(self.filterSettingsWidget)
+        self.saturationSpinBox.setObjectName(u"saturationSpinBox")
+        self.saturationSpinBox.setMinimum(50)
+        self.saturationSpinBox.setMaximum(150)
+        self.saturationSpinBox.setValue(100)
+
+        self.gridLayout_2.addWidget(self.saturationSpinBox, 18, 1, 1, 1)
 
         self.flipWidget = QWidget(self.filterSettingsWidget)
         self.flipWidget.setObjectName(u"flipWidget")
@@ -138,82 +204,17 @@ class Ui_SyntheticFiltersEditor(object):
         self.horizontalLayout.addWidget(self.horizontalCheckBox)
 
 
-        self.gridLayout_2.addWidget(self.flipWidget, 19, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.flipWidget, 33, 0, 1, 2)
 
-        self.horizontalSpacer_7 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.forceResolutionCheckBox = QCheckBox(self.filterSettingsWidget)
+        self.forceResolutionCheckBox.setObjectName(u"forceResolutionCheckBox")
 
-        self.gridLayout_2.addItem(self.horizontalSpacer_7, 20, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.forceResolutionCheckBox, 1, 0, 1, 1)
 
-        self.horizontalSpacer_5 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.letterboxingLabel = QLabel(self.filterSettingsWidget)
+        self.letterboxingLabel.setObjectName(u"letterboxingLabel")
 
-        self.gridLayout_2.addItem(self.horizontalSpacer_5, 15, 0, 1, 2)
-
-        self.saturationLabel = QLabel(self.filterSettingsWidget)
-        self.saturationLabel.setObjectName(u"saturationLabel")
-
-        self.gridLayout_2.addWidget(self.saturationLabel, 4, 0, 1, 1)
-
-        self.blurLabel = QLabel(self.filterSettingsWidget)
-        self.blurLabel.setObjectName(u"blurLabel")
-
-        self.gridLayout_2.addWidget(self.blurLabel, 1, 0, 1, 1)
-
-        self.gaussianLabel = QLabel(self.filterSettingsWidget)
-        self.gaussianLabel.setObjectName(u"gaussianLabel")
-
-        self.gridLayout_2.addWidget(self.gaussianLabel, 16, 0, 1, 1)
-
-        self.horizontalSpacer_4 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_2.addItem(self.horizontalSpacer_4, 12, 0, 1, 2)
-
-        self.sapSlider = QSlider(self.filterSettingsWidget)
-        self.sapSlider.setObjectName(u"sapSlider")
-        self.sapSlider.setMaximum(1000)
-        self.sapSlider.setOrientation(Qt.Orientation.Horizontal)
-
-        self.gridLayout_2.addWidget(self.sapSlider, 14, 0, 1, 2)
-
-        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_2.addItem(self.horizontalSpacer_3, 9, 0, 1, 2)
-
-        self.brightnessSpinBox = QSpinBox(self.filterSettingsWidget)
-        self.brightnessSpinBox.setObjectName(u"brightnessSpinBox")
-        self.brightnessSpinBox.setMinimum(-50)
-        self.brightnessSpinBox.setMaximum(50)
-
-        self.gridLayout_2.addWidget(self.brightnessSpinBox, 10, 1, 1, 1)
-
-        self.contrastSpinBox = QSpinBox(self.filterSettingsWidget)
-        self.contrastSpinBox.setObjectName(u"contrastSpinBox")
-        self.contrastSpinBox.setMinimum(50)
-        self.contrastSpinBox.setMaximum(150)
-        self.contrastSpinBox.setValue(100)
-
-        self.gridLayout_2.addWidget(self.contrastSpinBox, 7, 1, 1, 1)
-
-        self.contrastLabel = QLabel(self.filterSettingsWidget)
-        self.contrastLabel.setObjectName(u"contrastLabel")
-
-        self.gridLayout_2.addWidget(self.contrastLabel, 7, 0, 1, 1)
-
-        self.brightnessLabel = QLabel(self.filterSettingsWidget)
-        self.brightnessLabel.setObjectName(u"brightnessLabel")
-
-        self.gridLayout_2.addWidget(self.brightnessLabel, 10, 0, 1, 1)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_2.addItem(self.horizontalSpacer, 3, 0, 1, 2)
-
-        self.saturationSpinBox = QSpinBox(self.filterSettingsWidget)
-        self.saturationSpinBox.setObjectName(u"saturationSpinBox")
-        self.saturationSpinBox.setMinimum(50)
-        self.saturationSpinBox.setMaximum(150)
-        self.saturationSpinBox.setValue(100)
-
-        self.gridLayout_2.addWidget(self.saturationSpinBox, 4, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.letterboxingLabel, 4, 0, 1, 1)
 
         self.blurSlider = QSlider(self.filterSettingsWidget)
         self.blurSlider.setObjectName(u"blurSlider")
@@ -221,10 +222,59 @@ class Ui_SyntheticFiltersEditor(object):
         self.blurSlider.setSingleStep(2)
         self.blurSlider.setOrientation(Qt.Orientation.Horizontal)
 
-        self.gridLayout_2.addWidget(self.blurSlider, 2, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.blurSlider, 16, 0, 1, 2)
+
+        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_10, 3, 0, 1, 2)
+
+        self.sapSlider = QSlider(self.filterSettingsWidget)
+        self.sapSlider.setObjectName(u"sapSlider")
+        self.sapSlider.setMaximum(1000)
+        self.sapSlider.setOrientation(Qt.Orientation.Horizontal)
+
+        self.gridLayout_2.addWidget(self.sapSlider, 28, 0, 1, 2)
+
+        self.gaussianLabel = QLabel(self.filterSettingsWidget)
+        self.gaussianLabel.setObjectName(u"gaussianLabel")
+
+        self.gridLayout_2.addWidget(self.gaussianLabel, 30, 0, 1, 1)
+
+        self.contrastLabel = QLabel(self.filterSettingsWidget)
+        self.contrastLabel.setObjectName(u"contrastLabel")
+
+        self.gridLayout_2.addWidget(self.contrastLabel, 21, 0, 1, 1)
+
+        self.sapSpinBox = QSpinBox(self.filterSettingsWidget)
+        self.sapSpinBox.setObjectName(u"sapSpinBox")
+        self.sapSpinBox.setMaximum(1000)
+
+        self.gridLayout_2.addWidget(self.sapSpinBox, 27, 1, 1, 1)
+
+        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_2.addItem(self.horizontalSpacer_3, 23, 0, 1, 2)
+
+        self.gaussianSlider = QSlider(self.filterSettingsWidget)
+        self.gaussianSlider.setObjectName(u"gaussianSlider")
+        self.gaussianSlider.setMaximum(1000)
+        self.gaussianSlider.setOrientation(Qt.Orientation.Horizontal)
+
+        self.gridLayout_2.addWidget(self.gaussianSlider, 31, 0, 1, 2)
+
+        self.resolutionSpinBox = QSpinBox(self.filterSettingsWidget)
+        self.resolutionSpinBox.setObjectName(u"resolutionSpinBox")
+        self.resolutionSpinBox.setMaximum(20000)
+
+        self.gridLayout_2.addWidget(self.resolutionSpinBox, 2, 0, 1, 2)
+
+        self.aspectRatioLabel = QLabel(self.filterSettingsWidget)
+        self.aspectRatioLabel.setObjectName(u"aspectRatioLabel")
+
+        self.gridLayout_2.addWidget(self.aspectRatioLabel, 1, 1, 1, 1)
 
 
-        self.gridLayout.addWidget(self.filterSettingsWidget, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.filterSettingsWidget, 4, 0, 1, 1)
 
         self.imageSamplesLabel = QLabel(self.scrollAreaWidgetContents_2)
         self.imageSamplesLabel.setObjectName(u"imageSamplesLabel")
@@ -237,10 +287,9 @@ class Ui_SyntheticFiltersEditor(object):
 
         self.gridLayout.addWidget(self.imageSamplesLabel, 0, 0, 1, 1)
 
-        self.applyFiltersButton = QPushButton(self.scrollAreaWidgetContents_2)
-        self.applyFiltersButton.setObjectName(u"applyFiltersButton")
+        self.horizontalSpacer_8 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.gridLayout.addWidget(self.applyFiltersButton, 1, 0, 1, 1)
+        self.gridLayout.addItem(self.horizontalSpacer_8, 3, 0, 1, 1)
 
         self.scrollArea.setWidget(self.scrollAreaWidgetContents_2)
 
@@ -305,18 +354,25 @@ class Ui_SyntheticFiltersEditor(object):
 
     def retranslateUi(self, SyntheticFiltersEditor):
         SyntheticFiltersEditor.setWindowTitle(QCoreApplication.translate("SyntheticFiltersEditor", u"Form", None))
-        self.gaussianSpinBox.setSuffix(QCoreApplication.translate("SyntheticFiltersEditor", u" / 10 %", None))
-        self.sapSpinBox.setSuffix(QCoreApplication.translate("SyntheticFiltersEditor", u" / 10 %", None))
+        self.applyFiltersButton.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Save and Apply ( Tab )", None))
+        self.brightnessLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Brightness", None))
         self.sapLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Salt and Pepper noise", None))
+        self.letterboxingPaddingLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Letterboxing background RGB value:", None))
+        self.saturationLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Saturation", None))
+        self.applyLetterBoxingCheckBox.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Apply letterboxing", None))
+        self.gaussianSpinBox.setSuffix(QCoreApplication.translate("SyntheticFiltersEditor", u" / 10 %", None))
+        self.paddingColorPicker.setText("")
+        self.blurLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Blur", None))
         self.verticalCheckBox.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Flip vertically", None))
         self.horizontalCheckBox.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Flip horizontally", None))
-        self.saturationLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Saturation", None))
-        self.blurLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Blur", None))
+        self.forceResolutionCheckBox.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Force resolution", None))
+        self.letterboxingLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Padding and Letterboxing", None))
         self.gaussianLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Gaussian noise", None))
         self.contrastLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Contrast", None))
-        self.brightnessLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Brightness", None))
+        self.sapSpinBox.setSuffix(QCoreApplication.translate("SyntheticFiltersEditor", u" / 10 %", None))
+        self.resolutionSpinBox.setPrefix(QCoreApplication.translate("SyntheticFiltersEditor", u"Width / Height : ", None))
+        self.aspectRatioLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Aspect ratio 1:1", None))
         self.imageSamplesLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Filter settings:", None))
-        self.applyFiltersButton.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Apply ( Tab )", None))
         self.deleteFilterButton.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Delete", None))
         self.newFilterButton.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"New", None))
         self.filtersLabel.setText(QCoreApplication.translate("SyntheticFiltersEditor", u"Filters for synthetic data", None))

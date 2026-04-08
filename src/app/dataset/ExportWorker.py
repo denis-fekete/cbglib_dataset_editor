@@ -9,16 +9,12 @@ Description:
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-import random
-import os
-import yaml
 import cv2 as cv
 from pathlib import Path
 
 from app.labeling.ImageSample import ImageSample
 from app.synthetic.FilterPreset import FilterPreset
 from app.synthetic.SyntheticImage import SyntheticImage
-from app.labeling.LabelEntry import LabelEntry
 
 
 class ExportWorker(QObject):
@@ -26,129 +22,83 @@ class ExportWorker(QObject):
         self,
         imageSamples: list[ImageSample],
         filterPresets: list[FilterPreset],
-        labelsDict: dict[int, LabelEntry],
-        exportRootPath: str,
-        applyFilters: bool,
+        trainImagesPath: Path,
+        trainLabelsPath: Path,
+        valImagesPath: Path,
+        valLabelsPath: Path,
+        generateSynthetic: bool,
         separateByClasses: bool,
         generateNameFromClass: bool,
-        trainDataPercentage: int,
+        exportOriginal: bool,
     ) -> None:
         super().__init__()
         self.imageSamples = imageSamples
         self.filterPresets = filterPresets
-        self.exportRootPath = exportRootPath
-        self.labelsDict = labelsDict
-        self.applyFilters = applyFilters
+        self.trainImagesPath = trainImagesPath
+        self.trainLabelsPath = trainLabelsPath
+        self.valImagesPath = valImagesPath
+        self.valLabelsPath = valLabelsPath
+        self.applyFilters = generateSynthetic
         self.separateByClasses = separateByClasses
-        self.trainDataPercentage = trainDataPercentage
         self.generateNameFromClass = generateNameFromClass
+        self.exportOriginal = exportOriginal
 
-    progress = Signal(int)
+        self.sFilter: SyntheticImage | None = None
+
+    progress = Signal()
     finished = Signal()
 
     @Slot()
     def run(self) -> None:
-        rootPath = Path(self.exportRootPath)
-        imagesPath = rootPath / "images"
-        trainImagesPath = imagesPath / "train"
-        valImagesPath = imagesPath / "val"
-
-        labelsPath = rootPath / "labels"
-        trainLabelPath = labelsPath / "train"
-        valLabelPath = labelsPath / "val"
-
-        os.makedirs(imagesPath, exist_ok=True)
-        os.makedirs(trainImagesPath, exist_ok=True)
-        os.makedirs(valImagesPath, exist_ok=True)
-        os.makedirs(labelsPath, exist_ok=True)
-        os.makedirs(trainLabelPath, exist_ok=True)
-        os.makedirs(valLabelPath, exist_ok=True)
-
-        namesDict: dict[int, str] = {}
-        for label in self.labelsDict.values():
-            namesDict[label.index] = label.name
-
-        dataYaml = {
-            "filePath": rootPath.name,
-            "train": "images/train",
-            "val": "images/val",
-            # "test": "# not used",
-            "names": namesDict,
-        }
-
-        with open(rootPath / "data.yaml", "w", encoding="utf-8") as f:
-            yaml.safe_dump(dataYaml, f, sort_keys=False)
-
-        trainImages: list[ImageSample] = []
-        valImages: list[ImageSample] = []
-
-        maxTrainImages = int(
-            (len(self.imageSamples) / 100.0) * self.trainDataPercentage
-        )
-
-        for imageSample in self.imageSamples:
-            if (
-                random.randint(0, 100) <= self.trainDataPercentage
-                and len(trainImages) <= maxTrainImages
-            ):
-                trainImages.append(imageSample)
-            else:
-                valImages.append(imageSample)
-
-        progressCnt = 0
-        if self.applyFilters:
-            progressStep = 100 / (
-                len(trainImages) * len(self.filterPresets) + len(valImages)
-            )
-        else:
-            progressStep = 100 / (len(trainImages) + len(valImages))
-
-        hasher = None
+        # create hasher
         if self.generateNameFromClass:
-            hasher = cv.img_hash.AverageHash().create()
+            self.hasher = cv.img_hash.AverageHash().create()
+        else:
+            self.hasher = None
 
-        sFilter = SyntheticImage()
-        for imageSample in trainImages:
-            imageSample: ImageSample = imageSample
-            imageSample.save(
-                exportImagePath=str(trainImagesPath.resolve()),
-                exportLabelPath=str(trainLabelPath.resolve()),
-                separateByClasses=self.separateByClasses,
-                hasher=hasher,
-            )
+        # export train data with synthetic data
+        self.sFilter = SyntheticImage()
+        for imageSample in self.imageSamples:
+            if imageSample.isForTraining:
+                self._exportSample(
+                    imageSample,
+                    self.trainImagesPath,
+                    self.trainLabelsPath,
+                    self.applyFilters,
+                )
+            else:
+                self._exportSample(imageSample, self.valImagesPath, self.valLabelsPath, False)
 
-            progressCnt = progressCnt + progressStep
-            self.progress.emit(progressCnt)
-
-            if self.applyFilters:
-                for preset in self.filterPresets:
-                    sFilter.filter = preset
-                    sFilter.setReference(imageSample)
-                    sFilter.save(
-                        str(trainImagesPath.resolve()),
-                        str(trainLabelPath.resolve()),
-                        self.separateByClasses,
-                        hasher=hasher,
-                    )
-
-                    progressCnt = progressCnt + progressStep
-                    self.progress.emit(progressCnt)
-
-            imageSample.cvImage = None
-
-        for imageSample in valImages:
-            imageSample: ImageSample = imageSample
-            imageSample.save(
-                exportImagePath=str(valImagesPath.resolve()),
-                exportLabelPath=str(valLabelPath.resolve()),
-                separateByClasses=self.separateByClasses,
-                hasher=hasher,
-            )
-
-            imageSample.cvImage = None
-
-            progressCnt = progressCnt + progressStep
-            self.progress.emit(progressCnt)
-
-        self.progress.emit(100)
         self.finished.emit()
+
+    def _exportSample(
+        self,
+        imageSample: ImageSample,
+        imagePath: Path,
+        labelPath: Path,
+        applyFilters: bool,
+    ) -> None:
+        """Export single ImageSample"""
+        if self.exportOriginal:
+            imageSample.save(
+                exportImagePath=str(imagePath.resolve()),
+                exportLabelPath=str(labelPath.resolve()),
+                separateByClasses=self.separateByClasses,
+                hasher=self.hasher,
+            )
+
+        if applyFilters:
+            for preset in self.filterPresets:
+                self.sFilter.filter = preset
+                self.sFilter.setReference(imageSample)
+                self.sFilter.save(
+                    str(imagePath.resolve()),
+                    str(labelPath.resolve()),
+                    self.separateByClasses,
+                    hasher=self.hasher,
+                )
+
+        self.progress.emit()
+
+        # unload image sample from memory
+        imageSample.cvImage = None

@@ -8,6 +8,7 @@ Description:
 """
 
 from PySide6 import QtWidgets
+from PySide6.QtGui import QColor
 
 
 class ColorPicker(QtWidgets.QPushButton):
@@ -16,6 +17,7 @@ class ColorPicker(QtWidgets.QPushButton):
         super().__init__(parent)
 
         self.clicked.connect(self.onClick)
+        self.color = QColor(0, 0, 0)
 
     def onClick(self) -> None:
         color = QtWidgets.QColorDialog.getColor(self.color)

@@ -53,8 +53,8 @@ class ModelTrainer(AbstractTabWidget):
             self.datasetComboBoxChanged
         )
 
-        for i in range(0, len(MODELS_NAMES)):
-            self.ui.modelSelectorComboBox.addItem(MODELS_NAMES[i])
+        for key in MODELS_NAMES.keys():
+            self.ui.modelSelectorComboBox.addItem(MODELS_NAMES[key])
 
     #######################################################
     # Settings
@@ -181,7 +181,7 @@ class ModelTrainer(AbstractTabWidget):
         self.ui.logOutputTextEdit.setPlainText(
             self.ui.logOutputTextEdit.toPlainText() + "\n" + text
         )
-        self.ui.outputLogLabel.moveCursor(QTextCursor.End)  # type: ignore
+        self.ui.logOutputTextEdit.moveCursor(QTextCursor.End)  # pyright: ignore
 
     def showError(self, text: str) -> None:
         QtWidgets.QMessageBox.critical(self, "Training error", text)

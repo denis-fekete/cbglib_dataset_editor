@@ -18,3 +18,6 @@ class DatasetStatistics:
     emptySamples: int = 0
     classes: int = 0
     labelBoxes: int = 0
+    trainSamples: int = 0
+    valSamples: int = 0
+    testSamples: int = 0

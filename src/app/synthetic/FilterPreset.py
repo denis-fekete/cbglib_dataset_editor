@@ -27,9 +27,10 @@ class FilterPreset:
     hFlip: bool = False
     vFlip: bool = False
 
-    def toString(self) -> str:
-        string = f"name: {self.name}, blur: {self.blur}, sat : {self.saturation}, \
-        brightness : {self.brightness}, contrast : {self.contrast}, \
-        hFlip : {self.hFlip}, vFlip : {self.vFlip}, sap : {self.sapNoise}, \
-        gaussian : {self.gaussianNoise}"
-        return string
+    forceResolution: bool = False
+    resolution: int = 0
+
+    applyLetterbox: bool = False
+    paddingRed: int = 0
+    paddingGreen: int = 0
+    paddingBlue: int = 0

@@ -11,110 +11,176 @@ Description:
 import os
 from pathlib import Path
 from typing import Callable
+import random
+import yaml
+import math
 
-from app.labeling.ImageSample import ImageSample, LabelEntry
-from .FileData import FileData
+from PySide6 import QtCore
+from PySide6.QtCore import QThread, Slot, Signal
+
 from app.utils import SharedValues
-from app.utils.DatasetStatistics import DatasetStatistics
+from .ExportWorker import ExportWorker
+from .ImportWorker import ImportWorker
 
 
-class ImageDataset:
+class ImageDataset(QtCore.QObject):
+    exportFinished = Signal()
+    progressUpdate = Signal(float)
+    importFinished = Signal()
+
     def __init__(self, screenScaleText_fn: Callable[[], float]) -> None:
+        super().__init__()
         self.screenScaleText_fn: Callable[[], float] = screenScaleText_fn
         self.dataYamlPath: str | None = None
 
-    def loadImageSamples(
+        self.eWorkers: list[ExportWorker] = []
+        self.eWorkerThreads: list[QThread] = []
+        self.progress = 0.0
+
+    def importDataset(
         self,
-        rootPath: str,
-        outputList: list[ImageSample],
-        labelsDict: dict[int, LabelEntry],
     ) -> None:
         """Clears `imageSamples` and loads new from `SharedValues().datasetImportPath`"""
-        SharedValues().statistics = DatasetStatistics()
-        self.dataYamlPath = None
 
-        fileDataList: list[FileData] = self._loadFilesIntoList(rootPath)
+        self.iWorker = ImportWorker(
+            SharedValues().datasetImportPath,
+            SharedValues().imageSamples,
+            SharedValues().labelsDict,
+            self.screenScaleText_fn,
+        )
 
-        for item in fileDataList:
-            if item.ext == ".jpg":
-                SharedValues().statistics.imageSamples += 1
+        self.iWorkerThread = QThread()
+        self.iWorker.moveToThread(self.iWorkerThread)
 
-                matchedLabels: list[FileData] = []
-                for other in fileDataList:
-                    if other.ext == ".txt" and other.name == item.name:
-                        matchedLabels.append(other)
-                        SharedValues().statistics.labeledSamples += 1
+        self.iWorkerThread.started.connect(self.iWorker.run)
+        self.iWorker.progress.connect(self.progressUpdate)
+        self.iWorker.finished.connect(self.importFinished)
+        self.iWorker.dataYamlPathFound.connect(self.setDataYamlPath)
 
-                if len(matchedLabels) > 1:
-                    raise Exception(
-                        f"Multiple label (.txt) files found for one image (.jpg file): {matchedLabels}"
-                    )
+        self.iWorker.finished.connect(self.iWorkerThread.quit)
+        self.iWorker.finished.connect(self.iWorker.deleteLater)
+        self.iWorkerThread.finished.connect(self.iWorkerThread.deleteLater)
 
-                label = matchedLabels[0] if len(matchedLabels) > 0 else None
-                labelPath = label.filePath if (label is not None) else None
-                labelExt = label.ext if (label is not None) else None
+        self.iWorkerThread.start()
 
-                outputList.append(
-                    ImageSample(
-                        rootPath=rootPath,
-                        name=item.name,
-                        imagePath=item.filePath,
-                        imageExt=item.ext,
-                        labelPath=labelPath,
-                        labelExt=labelExt,
-                        labelsDict=labelsDict,
-                        screenScaleText_fn=self.screenScaleText_fn,
-                    )
-                )
+    def exportDataset(
+        self,
+        trainDataPercentage: int,
+        numOfWorkers: int,
+        generateSynthetic: bool,
+        separateByClasses: bool,
+        generateNameFromClass: bool,
+        exportOriginal: bool,
+    ) -> None:
+        """Exports dataset into Ultralytics YOLO format with data.yaml"""
 
-            elif item.ext == ".yaml" and item.name == "data":
-                if self.dataYamlPath == None:
-                    path = Path(rootPath)
-                    path = path / item.filePath / (item.name + item.ext)
+        self.exportYaml()
 
-                    self.dataYamlPath = str(path.resolve()._str)
-                else:
-                    raise Exception(
-                        "Error: Found multiple data.yaml files. Only one or none (will get created automatically) should be in dataset!"
-                    )
-            elif item.ext == ".txt":
-                SharedValues().statistics.labelsFiles += 1
+        self.numOfWorkers = numOfWorkers
+        self.finishedWorkers = 0
 
-    def _loadFilesIntoList(self, rootPath: str) -> list[FileData]:
-        """Returns list of dictionaries containing name, path and extension"""
-        rawFiles: list[str] = self._loadFilesRaw(rootPath)
+        # split train and validation data
+        maxTrainImages = int((len(SharedValues().imageSamples) / 100.0) * trainDataPercentage)
 
-        fileDataList: list[FileData] = []
-        for file in rawFiles:
-            fullPath: Path = Path(rootPath) / file
-            filePath = str(Path(file).parent)
-            fileName = fullPath.stem
-            ext = fullPath.suffix
-
-            fileDataList.append(FileData(name=fileName, filePath=filePath, ext=ext))
-
-        return fileDataList
-
-    def _loadFilesRaw(self, directoryPath: str) -> list[str]:
-        """
-        Reads all files from directory path, sub directories will be called recursively and name
-        of subdirectory will be added to the name. Example:\n
-        root
-          |- subdirectoryA
-          |---fileA
-          |- fileB
-        Will result in: 'fileB', 'subdirectoryA/fileA'
-        """
-        files: list[str] = []
-        path = Path(directoryPath)
-        for item in os.listdir(directoryPath):
-            if os.path.isfile(path / item):
-                files.append(item)
-
-            elif os.path.isdir(path / item):
-                tmpFiles = self._loadFilesRaw(str(path / item))
-                for dirItem in tmpFiles:
-                    files.append(item + r"/" + dirItem)
+        trainImages = 0
+        for imageSample in SharedValues().imageSamples:
+            if random.randint(0, 100) <= trainDataPercentage and trainImages <= maxTrainImages:
+                imageSample.isForTraining = True
+                trainImages += 1
             else:
-                raise Exception("Unknown file/directory format")
-        return files
+                imageSample.isForTraining = False
+
+        # calculate progress step for each image stored
+        self.progressStep = 100.0 / len(SharedValues().imageSamples)
+
+        # calculate work per worker
+        samplesPerWorker = math.floor(len(SharedValues().imageSamples) / numOfWorkers)
+        additionalSamples = len(SharedValues().imageSamples) % numOfWorkers
+
+        self.progress = 0.0
+        self.eWorkers = []  # reset threads and export workers
+        self.eWorkerThreads = []
+
+        indexStart = 0
+        indexEnd = samplesPerWorker + additionalSamples  # add additional work to first
+        for i in range(0, numOfWorkers):
+            self.eWorkerThreads.append(QThread())
+
+            worker = ExportWorker(
+                imageSamples=SharedValues().imageSamples[indexStart:indexEnd],
+                filterPresets=SharedValues().filterPresets,
+                trainImagesPath=self.trainImagesPath,
+                trainLabelsPath=self.trainLabelsPath,
+                valImagesPath=self.valImagesPath,
+                valLabelsPath=self.valLabelsPath,
+                generateSynthetic=generateSynthetic,
+                separateByClasses=separateByClasses,
+                generateNameFromClass=generateNameFromClass,
+                exportOriginal=exportOriginal,
+            )
+            self.eWorkers.append(worker)
+
+            indexStart = indexEnd
+            indexEnd = indexStart + samplesPerWorker
+
+            self.eWorkers[i].moveToThread(self.eWorkerThreads[i])
+
+            self.eWorkerThreads[i].started.connect(self.eWorkers[i].run)
+            self.eWorkers[i].progress.connect(self.progressSampleFinished)
+            self.eWorkers[i].finished.connect(self.workerFinished)
+
+            self.eWorkers[i].finished.connect(self.eWorkerThreads[i].quit)
+            self.eWorkers[i].finished.connect(self.eWorkers[i].deleteLater)
+            self.eWorkerThreads[i].finished.connect(self.eWorkerThreads[i].deleteLater)
+
+            self.eWorkerThreads[i].start()
+
+    def exportYaml(self) -> None:
+        """Exports data.yaml file from current values in SharedValues()"""
+        rootPath = Path(SharedValues().datasetExportPath)
+        imagesPath = rootPath / "images"
+        self.trainImagesPath = imagesPath / "train"
+        self.valImagesPath = imagesPath / "val"
+
+        labelsPath = rootPath / "labels"
+        self.trainLabelsPath = labelsPath / "train"
+        self.valLabelsPath = labelsPath / "val"
+
+        os.makedirs(imagesPath, exist_ok=True)
+        os.makedirs(self.trainImagesPath, exist_ok=True)
+        os.makedirs(self.valImagesPath, exist_ok=True)
+        os.makedirs(labelsPath, exist_ok=True)
+        os.makedirs(self.trainLabelsPath, exist_ok=True)
+        os.makedirs(self.valLabelsPath, exist_ok=True)
+
+        namesDict: dict[int, str] = {}
+        for label in SharedValues().labelsDict.values():
+            namesDict[label.index] = label.name
+
+        dataYaml = {
+            "filePath": rootPath.name,
+            "train": "images/train",
+            "val": "images/val",
+            # "test": "# not used",
+            "names": namesDict,
+        }
+
+        with open(rootPath / "data.yaml", "w", encoding="utf-8") as f:
+            yaml.safe_dump(dataYaml, f, sort_keys=False)
+
+    @Slot()
+    def progressSampleFinished(self):
+        self.progress += self.progressStep
+        self.progressUpdate.emit(self.progress)
+
+    @Slot()
+    def setDataYamlPath(self, path: str):
+        self.dataYamlPath = path
+
+    @Slot()
+    def workerFinished(self):
+        self.finishedWorkers += 1
+
+        if self.finishedWorkers == self.numOfWorkers:
+            self.exportFinished.emit()
+            self.progressUpdate.emit(100)

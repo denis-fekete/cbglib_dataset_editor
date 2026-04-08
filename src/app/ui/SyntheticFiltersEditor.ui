@@ -35,13 +35,20 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-115</y>
+        <y>0</y>
         <width>286</width>
-        <height>668</height>
+        <height>902</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="2" column="0">
+       <item row="1" column="0">
+        <widget class="QPushButton" name="applyFiltersButton">
+         <property name="text">
+          <string>Save and Apply ( Tab )</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
         <widget class="QWidget" name="filterSettingsWidget" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
@@ -62,40 +69,34 @@
           </size>
          </property>
          <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
-          <item row="18" column="0" colspan="2">
-           <spacer name="horizontalSpacer_6">
+          <item row="24" column="0">
+           <widget class="QLabel" name="brightnessLabel">
+            <property name="text">
+             <string>Brightness</string>
+            </property>
+           </widget>
+          </item>
+          <item row="25" column="0" colspan="2">
+           <widget class="QSlider" name="brightnessSlider">
+            <property name="minimum">
+             <number>-50</number>
+            </property>
+            <property name="maximum">
+             <number>50</number>
+            </property>
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           </widget>
           </item>
-          <item row="16" column="1">
-           <widget class="QSpinBox" name="gaussianSpinBox">
-            <property name="suffix">
-             <string> / 10 %</string>
-            </property>
-            <property name="maximum">
-             <number>1000</number>
+          <item row="27" column="0">
+           <widget class="QLabel" name="sapLabel">
+            <property name="text">
+             <string>Salt and Pepper noise</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="blurSpinBox">
-            <property name="maximum">
-             <number>100</number>
-            </property>
-            <property name="singleStep">
-             <number>2</number>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0" colspan="2">
+          <item row="20" column="0" colspan="2">
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
@@ -108,7 +109,97 @@
             </property>
            </spacer>
           </item>
-          <item row="5" column="0" colspan="2">
+          <item row="9" column="0" colspan="2">
+           <widget class="QLabel" name="letterboxingPaddingLabel">
+            <property name="text">
+             <string>Letterboxing background RGB value:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="29" column="0" colspan="2">
+           <spacer name="horizontalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="18" column="0">
+           <widget class="QLabel" name="saturationLabel">
+            <property name="text">
+             <string>Saturation</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QCheckBox" name="applyLetterBoxingCheckBox">
+            <property name="text">
+             <string>Apply letterboxing</string>
+            </property>
+           </widget>
+          </item>
+          <item row="34" column="0" colspan="2">
+           <spacer name="horizontalSpacer_7">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="14" column="1">
+           <widget class="QSpinBox" name="blurSpinBox">
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="singleStep">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="17" column="0" colspan="2">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="30" column="1">
+           <widget class="QSpinBox" name="gaussianSpinBox">
+            <property name="suffix">
+             <string> / 10 %</string>
+            </property>
+            <property name="maximum">
+             <number>1000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="24" column="1">
+           <widget class="QSpinBox" name="brightnessSpinBox">
+            <property name="minimum">
+             <number>-50</number>
+            </property>
+            <property name="maximum">
+             <number>50</number>
+            </property>
+           </widget>
+          </item>
+          <item row="19" column="0" colspan="2">
            <widget class="QSlider" name="saturationSlider">
             <property name="minimum">
              <number>50</number>
@@ -127,34 +218,7 @@
             </property>
            </widget>
           </item>
-          <item row="13" column="1">
-           <widget class="QSpinBox" name="sapSpinBox">
-            <property name="suffix">
-             <string> / 10 %</string>
-            </property>
-            <property name="maximum">
-             <number>1000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="13" column="0">
-           <widget class="QLabel" name="sapLabel">
-            <property name="text">
-             <string>Salt and Pepper noise</string>
-            </property>
-           </widget>
-          </item>
-          <item row="17" column="0" colspan="2">
-           <widget class="QSlider" name="gaussianSlider">
-            <property name="maximum">
-             <number>1000</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="0" colspan="2">
+          <item row="22" column="0" colspan="2">
            <widget class="QSlider" name="contrastSlider">
             <property name="minimum">
              <number>50</number>
@@ -173,20 +237,86 @@
             </property>
            </widget>
           </item>
-          <item row="11" column="0" colspan="2">
-           <widget class="QSlider" name="brightnessSlider">
-            <property name="minimum">
-             <number>-50</number>
-            </property>
-            <property name="maximum">
-             <number>50</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
+          <item row="10" column="0" colspan="2">
+           <widget class="ColorPicker" name="paddingColorPicker">
+            <property name="text">
+             <string/>
             </property>
            </widget>
           </item>
-          <item row="19" column="0" colspan="2">
+          <item row="13" column="0" colspan="2">
+           <spacer name="horizontalSpacer_9">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="32" column="0" colspan="2">
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="21" column="1">
+           <widget class="QSpinBox" name="contrastSpinBox">
+            <property name="minimum">
+             <number>50</number>
+            </property>
+            <property name="maximum">
+             <number>150</number>
+            </property>
+            <property name="value">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="0">
+           <widget class="QLabel" name="blurLabel">
+            <property name="text">
+             <string>Blur</string>
+            </property>
+           </widget>
+          </item>
+          <item row="26" column="0" colspan="2">
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="18" column="1">
+           <widget class="QSpinBox" name="saturationSpinBox">
+            <property name="minimum">
+             <number>50</number>
+            </property>
+            <property name="maximum">
+             <number>150</number>
+            </property>
+            <property name="value">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
+          <item row="33" column="0" colspan="2">
            <widget class="QWidget" name="flipWidget" native="true">
             <property name="minimumSize">
              <size>
@@ -212,55 +342,35 @@
             </layout>
            </widget>
           </item>
-          <item row="20" column="0" colspan="2">
-           <spacer name="horizontalSpacer_7">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="forceResolutionCheckBox">
+            <property name="text">
+             <string>Force resolution</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="15" column="0" colspan="2">
-           <spacer name="horizontalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QLabel" name="saturationLabel">
+           <widget class="QLabel" name="letterboxingLabel">
             <property name="text">
-             <string>Saturation</string>
+             <string>Padding and Letterboxing</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="blurLabel">
-            <property name="text">
-             <string>Blur</string>
+          <item row="16" column="0" colspan="2">
+           <widget class="QSlider" name="blurSlider">
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="singleStep">
+             <number>2</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
             </property>
            </widget>
           </item>
-          <item row="16" column="0">
-           <widget class="QLabel" name="gaussianLabel">
-            <property name="text">
-             <string>Gaussian noise</string>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="0" colspan="2">
-           <spacer name="horizontalSpacer_4">
+          <item row="3" column="0" colspan="2">
+           <spacer name="horizontalSpacer_10">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
             </property>
@@ -272,7 +382,7 @@
             </property>
            </spacer>
           </item>
-          <item row="14" column="0" colspan="2">
+          <item row="28" column="0" colspan="2">
            <widget class="QSlider" name="sapSlider">
             <property name="maximum">
              <number>1000</number>
@@ -282,7 +392,31 @@
             </property>
            </widget>
           </item>
-          <item row="9" column="0" colspan="2">
+          <item row="30" column="0">
+           <widget class="QLabel" name="gaussianLabel">
+            <property name="text">
+             <string>Gaussian noise</string>
+            </property>
+           </widget>
+          </item>
+          <item row="21" column="0">
+           <widget class="QLabel" name="contrastLabel">
+            <property name="text">
+             <string>Contrast</string>
+            </property>
+           </widget>
+          </item>
+          <item row="27" column="1">
+           <widget class="QSpinBox" name="sapSpinBox">
+            <property name="suffix">
+             <string> / 10 %</string>
+            </property>
+            <property name="maximum">
+             <number>1000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="23" column="0" colspan="2">
            <spacer name="horizontalSpacer_3">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
@@ -295,79 +429,30 @@
             </property>
            </spacer>
           </item>
-          <item row="10" column="1">
-           <widget class="QSpinBox" name="brightnessSpinBox">
-            <property name="minimum">
-             <number>-50</number>
-            </property>
+          <item row="31" column="0" colspan="2">
+           <widget class="QSlider" name="gaussianSlider">
             <property name="maximum">
-             <number>50</number>
+             <number>1000</number>
             </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QSpinBox" name="contrastSpinBox">
-            <property name="minimum">
-             <number>50</number>
-            </property>
-            <property name="maximum">
-             <number>150</number>
-            </property>
-            <property name="value">
-             <number>100</number>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="0">
-           <widget class="QLabel" name="contrastLabel">
-            <property name="text">
-             <string>Contrast</string>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="0">
-           <widget class="QLabel" name="brightnessLabel">
-            <property name="text">
-             <string>Brightness</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
-           <spacer name="horizontalSpacer">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="4" column="1">
-           <widget class="QSpinBox" name="saturationSpinBox">
-            <property name="minimum">
-             <number>50</number>
-            </property>
-            <property name="maximum">
-             <number>150</number>
-            </property>
-            <property name="value">
-             <number>100</number>
             </property>
            </widget>
           </item>
           <item row="2" column="0" colspan="2">
-           <widget class="QSlider" name="blurSlider">
+           <widget class="QSpinBox" name="resolutionSpinBox">
+            <property name="prefix">
+             <string>Width / Height : </string>
+            </property>
             <property name="maximum">
-             <number>100</number>
+             <number>20000</number>
             </property>
-            <property name="singleStep">
-             <number>2</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="aspectRatioLabel">
+            <property name="text">
+             <string>Aspect ratio 1:1</string>
             </property>
            </widget>
           </item>
@@ -390,12 +475,18 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QPushButton" name="applyFiltersButton">
-         <property name="text">
-          <string>Apply ( Tab )</string>
+       <item row="3" column="0">
+        <spacer name="horizontalSpacer_8">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
-        </widget>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -493,6 +584,11 @@
    <class>FilterPresetTreeView</class>
    <extends>QTreeView</extends>
    <header>app.widgets.FilterPresetTreeView</header>
+  </customwidget>
+  <customwidget>
+   <class>ColorPicker</class>
+   <extends>QPushButton</extends>
+   <header>app.widgets.ColorPicker</header>
   </customwidget>
  </customwidgets>
  <resources/>

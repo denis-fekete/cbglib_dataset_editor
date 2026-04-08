@@ -71,6 +71,7 @@ class ImageSample:
         self.height: float = 0
         self._lastModified: datetime | None = None
         self._loaded = False
+        self.isForTraining = False
 
     def _loadImageAndLabel(
         self, skipLabel: bool = False, skipImage: bool = False
@@ -244,7 +245,7 @@ class ImageSample:
             fullLabelPath /= self.name + labelExt
 
         if fullLabelPath.exists():
-            fullLabelPath = fullLabelPath.stem + "_1" + fullLabelPath.suffix  # type: ignore
+            fullLabelPath = Path(fullLabelPath.stem + "_1" + fullLabelPath.suffix)
 
         with open(fullLabelPath, "w") as f:
             for labelBox in self.labelBoxes:
