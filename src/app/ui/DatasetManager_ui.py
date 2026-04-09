@@ -43,15 +43,15 @@ class Ui_DatasetManager(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.statisticsForm = QFormLayout()
         self.statisticsForm.setObjectName(u"statisticsForm")
-        self.labeldFilesLabel = QLabel(self.detailsWidget)
-        self.labeldFilesLabel.setObjectName(u"labeldFilesLabel")
+        self.labelFilesLabel = QLabel(self.detailsWidget)
+        self.labelFilesLabel.setObjectName(u"labelFilesLabel")
 
-        self.statisticsForm.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labeldFilesLabel)
+        self.statisticsForm.setWidget(1, QFormLayout.ItemRole.LabelRole, self.labelFilesLabel)
 
-        self.labeledLineEdit = QLineEdit(self.detailsWidget)
-        self.labeledLineEdit.setObjectName(u"labeledLineEdit")
+        self.labelFilesLineEdit = QLineEdit(self.detailsWidget)
+        self.labelFilesLineEdit.setObjectName(u"labelFilesLineEdit")
 
-        self.statisticsForm.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labeledLineEdit)
+        self.statisticsForm.setWidget(1, QFormLayout.ItemRole.FieldRole, self.labelFilesLineEdit)
 
         self.imagesSamplesLabel = QLabel(self.detailsWidget)
         self.imagesSamplesLabel.setObjectName(u"imagesSamplesLabel")
@@ -375,7 +375,7 @@ class Ui_DatasetManager(object):
 
     def retranslateUi(self, DatasetManager):
         DatasetManager.setWindowTitle(QCoreApplication.translate("DatasetManager", u"Form", None))
-        self.labeldFilesLabel.setText(QCoreApplication.translate("DatasetManager", u"Label files", None))
+        self.labelFilesLabel.setText(QCoreApplication.translate("DatasetManager", u"Label files", None))
         self.imagesSamplesLabel.setText(QCoreApplication.translate("DatasetManager", u"Image Samples:", None))
         self.annotatedSamplesLabel.setText(QCoreApplication.translate("DatasetManager", u"Annotated Image Samples", None))
         self.emptySamplesLabel.setText(QCoreApplication.translate("DatasetManager", u"Empty image samples", None))

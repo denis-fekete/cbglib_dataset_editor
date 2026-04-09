@@ -47,6 +47,8 @@ class DatasetManager(AbstractTabWidget):
         self.imageDataset.exportFinished.connect(self.exportFinished)
         self.imageDataset.progressUpdate.connect(self.progressUpdate)
 
+        self.statisticsCalculated = False
+
         self._connectUI()
 
     def _connectUI(self) -> None:
@@ -61,7 +63,8 @@ class DatasetManager(AbstractTabWidget):
         self.ui.exportOpenButton.clicked.connect(self.openExportDialog)
         self.ui.exportLineEdit.textChanged.connect(self.exportPathChanged)
 
-        self.ui.calcStatisticsButton.clicked.connect(self.calculateStatistics)
+        # lambda to prevent Qt sending checked argument which is misinterpreted as skipBoxesAndLabels
+        self.ui.calcStatisticsButton.clicked.connect(lambda: self.calculateStatistics())
 
     #######################################################
     # Importing dataset
@@ -94,6 +97,8 @@ class DatasetManager(AbstractTabWidget):
             QtWidgets.QMessageBox.warning(self, "Warning", "Not a valid path for import dataset.")
             return
 
+        self.statisticsCalculated = False  # reset statistic flag
+
         SharedValues().imageSamples.clear()
         self.onImportStart.emit()
 
@@ -113,7 +118,7 @@ class DatasetManager(AbstractTabWidget):
     def importFinished(self):
         self.updateDataYaml()
         self.onImportEnded.emit()
-        self.calculateStatistics(skipBoxesAndLabels=True)
+        self.updateImportStatistics()
         self.exportFinished()
         self.progressUpdate(100)
         self.ui.imageSampleTreeView.loadSamples(showFull=True)
@@ -222,7 +227,7 @@ class DatasetManager(AbstractTabWidget):
         for index, name in data["names"].items():
             SharedValues().labelsDict[index] = LabelEntry(name, index)
 
-        self.ui.classesTreeView.loadLabels()
+        self.ui.classesTreeView.loadLabels(showCounts=self.statisticsCalculated)
 
     @Slot()
     def exportFinished(self) -> None:
@@ -261,27 +266,42 @@ class DatasetManager(AbstractTabWidget):
     # Statistics
     #######################################################
     @Slot()
-    def calculateStatistics(self, skipBoxesAndLabels: bool = False):
+    def calculateStatistics(self):
         sVals = SharedValues()
 
-        if skipBoxesAndLabels:
-            sVals.statistics.emptySamples = 0
-            sVals.statistics.labelBoxes = 0
+        sVals.statistics.emptySamples = 0
+        sVals.statistics.labelBoxes = 0
 
-            for sample in SharedValues().imageSamples:
-                sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
-                boxes = len(sample.labelBoxes)
+        # reset labelDict count values
+        for value in SharedValues().labelsDict.values():
+            value.count = 0
 
-                if boxes == 0:
-                    sVals.statistics.emptySamples += 1
-                else:
-                    sVals.statistics.labelBoxes += boxes
+        for sample in SharedValues().imageSamples:
+            sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
+            boxes = len(sample.labelBoxes)
 
-            sVals.statistics.classes = len(SharedValues().labelsDict)
-            sVals.statistics.imageSamples = len(SharedValues().imageSamples)
-            self.ui.emptySamplesLineEdit.setText(f"{sVals.statistics.emptySamples}")
-            self.ui.labeledLineEdit.setText(f"{sVals.statistics.labelBoxes}")
+            if boxes == 0:
+                sVals.statistics.emptySamples += 1
+            else:
+                sVals.statistics.labelBoxes += boxes
 
+            for labelBox in sample.labelBoxes:
+                SharedValues().labelsDict[labelBox.label].count += 1
+
+        sVals.statistics.classes = len(SharedValues().labelsDict)
+        sVals.statistics.imageSamples = len(SharedValues().imageSamples)
+        self.ui.emptySamplesLineEdit.setText(f"{sVals.statistics.emptySamples}")
+        self.ui.labelBoxesLineEdit.setText(f"{sVals.statistics.labelBoxes}")
+
+        self.statisticsCalculated = True
+        self.ui.classesTreeView.loadLabels(showCounts=True)
+
+        self.updateImportStatistics()
+
+    @Slot()
+    def updateImportStatistics(self):
+        sVals = SharedValues()
+        self.ui.labelFilesLineEdit.setText(f"{sVals.statistics.labelsFiles}")
         self.ui.imageSamplesLineEdit.setText(f"{sVals.statistics.imageSamples}")
         self.ui.annotatedLineEdit.setText(f"{sVals.statistics.labeledSamples}")
         self.ui.totalClassesLineEdit.setText(f"{sVals.statistics.classes}")
@@ -298,7 +318,7 @@ class DatasetManager(AbstractTabWidget):
         self.incorrectLabels = self.ui.imageSampleTreeView.loadSamples(
             restoreVerticalPosition=True, showFull=True
         )
-        self.ui.classesTreeView.loadLabels()
+        self.ui.classesTreeView.loadLabels(showCounts=self.statisticsCalculated)
         self.ui.exportButton.setDisabled(self.incorrectLabels)
         if self.incorrectLabels:
             self.ui.exportButton.setText("Export (disabled until default labels are replaced)")

@@ -38,14 +38,14 @@
       <item>
        <layout class="QFormLayout" name="statisticsForm">
         <item row="1" column="0">
-         <widget class="QLabel" name="labeldFilesLabel">
+         <widget class="QLabel" name="labelFilesLabel">
           <property name="text">
            <string>Label files</string>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="labeledLineEdit"/>
+         <widget class="QLineEdit" name="labelFilesLineEdit"/>
         </item>
         <item row="2" column="0">
          <widget class="QLabel" name="imagesSamplesLabel">

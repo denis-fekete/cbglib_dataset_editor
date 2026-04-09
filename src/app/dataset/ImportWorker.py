@@ -59,7 +59,7 @@ class ImportWorker(QObject):
             self.progressCnt += self.progressStep
             self.progress.emit(self.progressCnt)
 
-            if item.ext == ".jpg":
+            if item.ext == ".jpg" or item.ext == ".png":
                 SharedValues().statistics.imageSamples += 1
 
                 matchedLabels: list[FileData] = []
@@ -70,7 +70,7 @@ class ImportWorker(QObject):
 
                 if len(matchedLabels) > 1:
                     raise Exception(
-                        f"Multiple label (.txt) files found for one image (.jpg file): {matchedLabels}"
+                        f"Multiple label (.txt) files found for one image ({item.ext} file): {matchedLabels}"
                     )
 
                 label = matchedLabels[0] if len(matchedLabels) > 0 else None

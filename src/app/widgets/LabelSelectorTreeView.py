@@ -33,7 +33,7 @@ class LabelSelectorTreeView(QtWidgets.QTreeView):
         self._labelsDict = labelsDict
         self.loadLabels()
 
-    def loadLabels(self) -> None:
+    def loadLabels(self, showCounts: bool = False) -> None:
         """Loads labels into the model and tree view"""
         if self._labelsDict is None:
             raise Exception(
@@ -42,10 +42,16 @@ class LabelSelectorTreeView(QtWidgets.QTreeView):
             )
 
         self.model.clear()
-        self.model.setHorizontalHeaderLabels(["#", "Name"])
+        if showCounts:
+            self.model.setHorizontalHeaderLabels(["#", "Name", "Count"])
+        else:
+            self.model.setHorizontalHeaderLabels(["#", "Name"])
 
         self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+
+        if showCounts:
+            self.header().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
 
         for label in self._labelsDict.values():
             index = QtGui.QStandardItem(str(label.index))
@@ -53,21 +59,23 @@ class LabelSelectorTreeView(QtWidgets.QTreeView):
 
             labelName = QtGui.QStandardItem(label.name)
 
-            self.model.appendRow([index, labelName])
+            if showCounts:
+                labelCount = QtGui.QStandardItem(f"{label.count}")
+                labelCount.setFlags(index.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.model.appendRow([index, labelName, labelCount])
+            else:
+                self.model.appendRow([index, labelName])
 
     def selectLabel(self, index: QModelIndex) -> None:
         """Selects current index of LabelEntry based on `index`"""
         self.selectionModel().select(
             index,
-            QItemSelectionModel.SelectionFlag.Select
-            | QItemSelectionModel.SelectionFlag.Rows,
+            QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows,
         )
         self.currQIndex = index
         self.currIndex = index.row()
 
     @Slot(QModelIndex, QModelIndex, list)
-    def _onModelDataChanged(
-        self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]
-    ):
+    def _onModelDataChanged(self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]):
         # WORK-AROUND : on compilation time QList cannot be converted to python list
         self.dataEdited.emit(topLeft, bottomRight, roles)

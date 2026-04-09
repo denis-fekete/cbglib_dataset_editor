@@ -12,3 +12,4 @@ class LabelEntry:
     def __init__(self, name: str, index: int) -> None:
         self.name: str = name
         self.index: int = index
+        self.count: int = 0
