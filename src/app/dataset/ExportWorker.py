@@ -26,7 +26,8 @@ class ExportWorker(QObject):
         trainLabelsPath: Path,
         valImagesPath: Path,
         valLabelsPath: Path,
-        generateSynthetic: bool,
+        genSyntheticTrain: bool,
+        genSyntheticVal: bool,
         separateByClasses: bool,
         generateNameFromClass: bool,
         exportOriginal: bool,
@@ -38,7 +39,8 @@ class ExportWorker(QObject):
         self.trainLabelsPath = trainLabelsPath
         self.valImagesPath = valImagesPath
         self.valLabelsPath = valLabelsPath
-        self.applyFilters = generateSynthetic
+        self.genSyntheticTrain = genSyntheticTrain
+        self.genSyntheticVal = genSyntheticVal
         self.separateByClasses = separateByClasses
         self.generateNameFromClass = generateNameFromClass
         self.exportOriginal = exportOriginal
@@ -64,10 +66,12 @@ class ExportWorker(QObject):
                     imageSample,
                     self.trainImagesPath,
                     self.trainLabelsPath,
-                    self.applyFilters,
+                    self.genSyntheticTrain,
                 )
             else:
-                self._exportSample(imageSample, self.valImagesPath, self.valLabelsPath, False)
+                self._exportSample(
+                    imageSample, self.valImagesPath, self.valLabelsPath, self.genSyntheticVal
+                )
 
         self.finished.emit()
 
@@ -76,7 +80,7 @@ class ExportWorker(QObject):
         imageSample: ImageSample,
         imagePath: Path,
         labelPath: Path,
-        applyFilters: bool,
+        generateSynthetic: bool,
     ) -> None:
         """Export single ImageSample"""
         if self.exportOriginal:
@@ -87,14 +91,15 @@ class ExportWorker(QObject):
                 hasher=self.hasher,
             )
 
-        if applyFilters:
+        if generateSynthetic:
             for preset in self.filterPresets:
                 self.sFilter.filter = preset
                 self.sFilter.setReference(imageSample)
+
                 self.sFilter.save(
-                    str(imagePath.resolve()),
-                    str(labelPath.resolve()),
-                    self.separateByClasses,
+                    exportImagePath=str(imagePath.resolve()),
+                    exportLabelPath=str(labelPath.resolve()),
+                    separateByClasses=self.separateByClasses,
                     hasher=self.hasher,
                 )
 

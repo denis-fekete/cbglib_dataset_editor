@@ -2,7 +2,8 @@
     "dataset": {
         "generateNames": true,
         "separateToSubdirectories": true,
-        "generateSynthetic": false,
+        "generateSyntheticTrain": true,
+        "generateSyntheticVal": true,
         "trainDataPercent": 70,
         "importPath": "",
         "workers": 4,
@@ -23,7 +24,7 @@
         "numberOfEpochs": 50,
         "batchSize": 8,
         "modelOutputPath": "",
-        "modelName": ""
+        "onnxExport": true
     },
     "syntheticSettings": {
         "filters": [

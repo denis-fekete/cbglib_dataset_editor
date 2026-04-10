@@ -284,10 +284,37 @@
       </item>
       <item row="5" column="0" colspan="3">
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="2" column="0">
-         <widget class="QCheckBox" name="genNamesCheckBox">
+        <item row="0" column="4">
+         <widget class="QLabel" name="workerThreadsLabel">
           <property name="text">
-           <string>Generate names</string>
+           <string>Export Worker threads:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="exportOriginalCheckBox">
+          <property name="text">
+           <string>Export original image</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="4">
+         <widget class="QSpinBox" name="workerThreadsSpinBox">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>64</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="separateCheckBox">
+          <property name="text">
+           <string>Separate into subdirectories</string>
           </property>
          </widget>
         </item>
@@ -304,44 +331,24 @@
           </property>
          </widget>
         </item>
+        <item row="2" column="2">
+         <widget class="QCheckBox" name="genNamesCheckBox">
+          <property name="text">
+           <string>Generate names</string>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="1">
-         <widget class="QCheckBox" name="genSyntheticCheckBox">
+         <widget class="QCheckBox" name="genSyntheticValCheckBox">
           <property name="text">
-           <string>Generate synthetic data</string>
+           <string>Generate synthetic for validation</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QCheckBox" name="separateCheckBox">
+        <item row="2" column="0">
+         <widget class="QCheckBox" name="genSyntheticTrainCheckBox">
           <property name="text">
-           <string>Separate into subdirectories</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="4">
-         <widget class="QSpinBox" name="workerThreadsSpinBox">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>64</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QCheckBox" name="exportOriginalCheckBox">
-          <property name="text">
-           <string>Export original image</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="4">
-         <widget class="QLabel" name="workerThreadsLabel">
-          <property name="text">
-           <string>Export Worker threads:</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+           <string>Generate synthetic for training</string>
           </property>
          </widget>
         </item>

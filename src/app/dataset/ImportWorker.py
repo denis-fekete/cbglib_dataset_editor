@@ -26,6 +26,7 @@ class ImportWorker(QObject):
     progress = Signal(float)
     finished = Signal()
     dataYamlPathFound = Signal(str)
+    error = Signal(str)
 
     def __init__(
         self,
@@ -69,9 +70,12 @@ class ImportWorker(QObject):
                         SharedValues().statistics.labeledSamples += 1
 
                 if len(matchedLabels) > 1:
-                    raise Exception(
+                    SharedValues().imageSamples.clear()
+                    SharedValues().statistics = DatasetStatistics()
+                    self.error.emit(
                         f"Multiple label (.txt) files found for one image ({item.ext} file): {matchedLabels}"
                     )
+                    return
 
                 label = matchedLabels[0] if len(matchedLabels) > 0 else None
                 labelPath = label.filePath if (label is not None) else None

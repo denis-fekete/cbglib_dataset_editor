@@ -99,13 +99,64 @@
    </item>
    <item row="0" column="0">
     <layout class="QGridLayout" name="modelSettingsWidget" columnstretch="0,1,0,0">
-     <item row="8" column="1" colspan="2">
-      <widget class="QLineEdit" name="modelOutputPathLineEdit"/>
-     </item>
      <item row="3" column="0">
       <widget class="QLabel" name="workersLabel">
        <property name="text">
         <string>Number of additional workers:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1" colspan="2">
+      <widget class="QSpinBox" name="workersSpinBox"/>
+     </item>
+     <item row="5" column="3">
+      <widget class="QPushButton" name="batchInfoButton">
+       <property name="text">
+        <string>Info</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1" colspan="2">
+      <widget class="QSpinBox" name="epochsSpinBox"/>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="modelNameLabel">
+       <property name="text">
+        <string>Model output name:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="3">
+      <widget class="QPushButton" name="generateNameButton">
+       <property name="text">
+        <string>Auto Generate</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="3">
+      <widget class="QPushButton" name="workersInfoButton">
+       <property name="text">
+        <string>Info</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1" colspan="2">
+      <widget class="QSpinBox" name="batchSpinBox"/>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="batchSizeLabel">
+       <property name="text">
+        <string>Batch size:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1" colspan="2">
+      <widget class="QLineEdit" name="modelNameLineEdit"/>
+     </item>
+     <item row="8" column="3">
+      <widget class="QPushButton" name="generateOutputDirectoryButton">
+       <property name="text">
+        <string>Auto Generate</string>
        </property>
       </widget>
      </item>
@@ -136,96 +187,6 @@
        </item>
       </layout>
      </item>
-     <item row="3" column="1" colspan="2">
-      <widget class="QSpinBox" name="workersSpinBox"/>
-     </item>
-     <item row="4" column="3">
-      <widget class="QPushButton" name="epochsInfoButton">
-       <property name="text">
-        <string>Info</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="batchSizeLabel">
-       <property name="text">
-        <string>Batch size:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="0" colspan="4">
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="3" column="3">
-      <widget class="QPushButton" name="workersInfoButton">
-       <property name="text">
-        <string>Info</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1" colspan="2">
-      <widget class="QSpinBox" name="batchSpinBox"/>
-     </item>
-     <item row="7" column="0" colspan="4">
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="5" column="3">
-      <widget class="QPushButton" name="batchInfoButton">
-       <property name="text">
-        <string>Info</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="3">
-      <widget class="QPushButton" name="generateNameButton">
-       <property name="text">
-        <string>Auto Generate</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1" colspan="2">
-      <widget class="QSpinBox" name="epochsSpinBox"/>
-     </item>
-     <item row="8" column="3">
-      <widget class="QPushButton" name="generateOutputDirectoryButton">
-       <property name="text">
-        <string>Auto Generate</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0" colspan="4">
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
      <item row="8" column="0">
       <widget class="QLabel" name="modelRootLabel">
        <property name="text">
@@ -233,27 +194,7 @@
        </property>
       </widget>
      </item>
-     <item row="14" column="0" colspan="4">
-      <widget class="QLineEdit" name="datasetPathLineEdit"/>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="epochsLabel">
-       <property name="text">
-        <string>Number of epochs:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="1" colspan="2">
-      <widget class="QLineEdit" name="modelNameLineEdit"/>
-     </item>
-     <item row="9" column="0">
-      <widget class="QLabel" name="modelNameLabel">
-       <property name="text">
-        <string>Model output name:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="0" colspan="4">
+     <item row="12" column="0" colspan="4">
       <layout class="QHBoxLayout" name="datasetLayout">
        <item>
         <widget class="QLabel" name="datasetPathLabel">
@@ -276,6 +217,72 @@
         <widget class="QComboBox" name="datasetPathComboBox"/>
        </item>
       </layout>
+     </item>
+     <item row="11" column="0" colspan="4">
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="7" column="0" colspan="4">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="0" colspan="4">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="epochsLabel">
+       <property name="text">
+        <string>Number of epochs:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="3">
+      <widget class="QPushButton" name="epochsInfoButton">
+       <property name="text">
+        <string>Info</string>
+       </property>
+      </widget>
+     </item>
+     <item row="15" column="0" colspan="4">
+      <widget class="QLineEdit" name="datasetPathLineEdit"/>
+     </item>
+     <item row="8" column="1" colspan="2">
+      <widget class="QLineEdit" name="modelOutputPathLineEdit"/>
+     </item>
+     <item row="10" column="0">
+      <widget class="QCheckBox" name="onnxExportCheckBox">
+       <property name="text">
+        <string>Export into ONNX format</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

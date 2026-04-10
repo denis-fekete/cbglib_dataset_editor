@@ -34,6 +34,20 @@ class SyntheticImage:
         self.padY = 0
         self.updateReference()
 
+    def generateFilterName(self, hasher: None | cv.img_hash.AverageHash = None) -> str:
+        if self.filter.name == "default" or self.filter.name == "":
+            fileName = f"_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
+            fileName += (
+                f"_bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
+            )
+            fileName += f"_sat{self.filter.saturation}"
+            fileName += f"_spn{self.filter.sapNoise}_gn{self.filter.gaussianNoise}"
+            fileName = ".$f$_" + fileName
+        else:
+            fileName = ".$f$_" + self.filter.name
+
+        return fileName
+
     def save(
         self,
         exportImagePath: str,
@@ -45,80 +59,53 @@ class SyntheticImage:
         Saves current `FilterPreset` as an Image based on `exportImagePath` and `exportLabelPath`.
         """
 
-        className = self.imageReference.getClassName()
+        if self.imageReference is None:
+            return
 
-        if self.filter.name == "default" or self.filter.name == "":
-            filterName = f"_vf{self.filter.vFlip}_hf{self.filter.hFlip}"
-            filterName += (
-                f"_bl{self.filter.blur}_br{self.filter.brightness}_con{self.filter.contrast}"
-            )
-            filterName += f"_sat{self.filter.saturation}"
-            filterName += f"_spn{self.filter.sapNoise}_gn{self.filter.gaussianNoise}"
-            filterName = ".$f$_" + filterName
-        else:
-            filterName = ".$f$_" + self.filter.name
-
-        fullImagePath = Path(exportImagePath)
-
-        if separateByClasses:
-            fullImagePath /= className
-
-        fullImagePath.mkdir(exist_ok=True)
-
-        if hasher is not None:
-            fullImagePath /= (
-                self.imageReference.generateNameFromImage(className, hasher)
-                + filterName
-                + self.imageReference.imageExt
-            )
-        else:
-            fullImagePath /= self.imageReference.name + filterName + self.imageReference.imageExt
-
-        if fullImagePath.exists():
-            fullImagePath = Path(fullImagePath.stem + "_1" + fullImagePath.suffix)
-
-        cv.imwrite(fullImagePath.resolve()._str, self.cvImage)
-
-        labelExt = (
-            self.imageReference.labelExt if (self.imageReference.labelExt is not None) else ".txt"
+        imagePath = self.imageReference.generatePathToFile(
+            exportImagePath, separateByClasses, isImage=True, hasher=hasher
         )
 
-        fullLabelPath = Path(exportLabelPath)
+        filterName = self.generateFilterName(hasher)
+        imagePath = imagePath.with_name(f"{imagePath.stem}{filterName}{imagePath.suffix}")
 
-        if separateByClasses:
-            fullLabelPath /= className
+        if imagePath.exists():
+            imagePath = imagePath.with_name(f"{imagePath.stem}_1{imagePath.suffix}")
 
-        fullLabelPath.mkdir(exist_ok=True)
+        if self.cvImage is None:
+            self.applyFilter()
 
-        if hasher is not None:
-            fullLabelPath /= (
-                self.imageReference.generateNameFromImage(className, hasher) + filterName + labelExt
+        cv.imwrite(str(imagePath.resolve()), self.cvImage)  # type: ignore
+
+        # labelBoxes loaded from first generatePathToFile()
+        if len(self.imageReference.labelBoxes) > 0:
+            labelPath = self.imageReference.generatePathToFile(
+                exportLabelPath, separateByClasses, isImage=False, hasher=hasher
             )
-        else:
-            fullLabelPath /= self.imageReference.name + filterName + labelExt
+            labelPath = labelPath.with_name(f"{labelPath.stem}{filterName}{labelPath.suffix}")
 
-        if fullLabelPath.exists():
-            fullLabelPath = Path(fullLabelPath.stem + "_1" + fullLabelPath.suffix)
+            if labelPath.exists():
+                labelPath = labelPath.with_name(f"{labelPath.stem}_1{labelPath.suffix}")
 
-        with open(fullLabelPath, "w") as f:
-            for labelBox in self.imageReference.labelBoxes:
-                x, y, w, h = labelBox.getDimensionTuple()
+            with open(labelPath, "w") as f:
+                for labelBox in self.imageReference.labelBoxes:
+                    x, y, w, h = labelBox.getDimensionTuple()
 
-                if self.filter.hFlip:
-                    x = self.imageReference.width - x
-                if self.filter.vFlip:
-                    y = self.imageReference.height - y
+                    if self.filter.hFlip:
+                        x = self.imageReference.width - x
+                    if self.filter.vFlip:
+                        y = self.imageReference.height - y
 
-                x, y, w, h = Pixels2Norm(
-                    x * self.scale + self.padX,
-                    y * self.scale + self.padY,
-                    w * self.scale,
-                    h * self.scale,
-                    self.width(),
-                    self.height(),
-                )
+                    x, y, w, h = Pixels2Norm(
+                        x * self.scale + self.padX,
+                        y * self.scale + self.padY,
+                        w * self.scale,
+                        h * self.scale,
+                        self.width(),
+                        self.height(),
+                    )
 
-                f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
+                    f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
 
     def unload(self) -> None:
         self.cvImage = None

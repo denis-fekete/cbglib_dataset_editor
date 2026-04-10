@@ -68,13 +68,16 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
                 name=self.modelName,
             )
 
-            self.model.export(format="onnx")
-
             self.finished.emit()
-
         except Exception as e:
             self.errorExit.emit(str(e))
             return
+
+    @Slot()
+    def exportONNX(self):
+        self.model.export(
+            format="onnx", opset=12, simplify=True, dynamic=False, imgsz=640, half=False
+        )
 
     def _epochCallback(self, trainer) -> None:
         msg = f"Epoch {trainer.epoch + 1}/{trainer.epochs}\n"

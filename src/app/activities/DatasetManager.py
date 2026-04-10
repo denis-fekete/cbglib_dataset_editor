@@ -46,6 +46,7 @@ class DatasetManager(AbstractTabWidget):
         self.imageDataset.importFinished.connect(self.importFinished)
         self.imageDataset.exportFinished.connect(self.exportFinished)
         self.imageDataset.progressUpdate.connect(self.progressUpdate)
+        self.imageDataset.error.connect(self.importError)
 
         self.statisticsCalculated = False
 
@@ -114,6 +115,11 @@ class DatasetManager(AbstractTabWidget):
             QtWidgets.QMessageBox.warning(self, "Error", e.__str__())
             self.exportFinished()
 
+    @Slot(str)
+    def importError(self, msg: str):
+        QtWidgets.QMessageBox.critical(self, "Import error", msg)
+        self.importFinished()
+
     @Slot()
     def importFinished(self):
         self.updateDataYaml()
@@ -160,12 +166,13 @@ class DatasetManager(AbstractTabWidget):
 
         if (
             not self.ui.exportOriginalCheckBox.isChecked()
-            and not self.ui.genSyntheticCheckBox.isChecked()
+            and not self.ui.genSyntheticTrainCheckBox.isChecked()
+            and not self.ui.genSyntheticValCheckBox.isChecked()
         ):
             QtWidgets.QMessageBox.warning(
                 self,
                 "Wrong export configuration",
-                "'Export original image' and 'Generate synthetic data' are disabled, there is nothing to export!",
+                "Exporting original image, synthetic training, and synthetic validation data are disabled, there is nothing to export!",
             )
             return
 
@@ -187,7 +194,8 @@ class DatasetManager(AbstractTabWidget):
         self.imageDataset.exportDataset(
             trainDataPercentage=self.ui.trainPercentSpinBox.value(),
             numOfWorkers=self.ui.workerThreadsSpinBox.value(),
-            generateSynthetic=self.ui.genSyntheticCheckBox.isChecked(),
+            genSyntheticTrain=self.ui.genSyntheticTrainCheckBox.isChecked(),
+            genSyntheticVal=self.ui.genSyntheticValCheckBox.isChecked(),
             separateByClasses=self.ui.separateCheckBox.isChecked(),
             generateNameFromClass=self.ui.genNamesCheckBox.isChecked(),
             exportOriginal=self.ui.exportOriginalCheckBox.isChecked(),
@@ -244,7 +252,8 @@ class DatasetManager(AbstractTabWidget):
         settings = SharedValues().settings.dataset
         self.ui.trainPercentSpinBox.setValue(min(settings.trainDataPercent, 100))
 
-        self.ui.genSyntheticCheckBox.setChecked(settings.generateSynthetic)
+        self.ui.genSyntheticTrainCheckBox.setChecked(settings.generateSyntheticTrain)
+        self.ui.genSyntheticValCheckBox.setChecked(settings.generateSyntheticVal)
         self.ui.genNamesCheckBox.setChecked(settings.generateNames)
         self.ui.separateCheckBox.setChecked(settings.separateToSubdirectories)
         self.ui.importLineEdit.setText(settings.importPath)
@@ -255,7 +264,8 @@ class DatasetManager(AbstractTabWidget):
         settings = SharedValues().settings.dataset
         settings.separateToSubdirectories = self.ui.separateCheckBox.isChecked()
         settings.generateNames = self.ui.genNamesCheckBox.isChecked()
-        settings.generateSynthetic = self.ui.genSyntheticCheckBox.isChecked()
+        settings.generateSyntheticTrain = self.ui.genSyntheticTrainCheckBox.isChecked()
+        settings.generateSyntheticVal = self.ui.genSyntheticValCheckBox.isChecked()
         settings.trainDataPercent = self.ui.trainPercentSpinBox.value()
         settings.importPath = self.ui.importLineEdit.text()
 

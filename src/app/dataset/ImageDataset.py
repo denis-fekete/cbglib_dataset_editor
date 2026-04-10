@@ -27,6 +27,7 @@ class ImageDataset(QtCore.QObject):
     exportFinished = Signal()
     progressUpdate = Signal(float)
     importFinished = Signal()
+    error = Signal(str)
 
     def __init__(self, screenScaleText_fn: Callable[[], float]) -> None:
         super().__init__()
@@ -36,6 +37,7 @@ class ImageDataset(QtCore.QObject):
         self.eWorkers: list[ExportWorker] = []
         self.eWorkerThreads: list[QThread] = []
         self.progress = 0.0
+        self.progressStep = 0.0
 
     def importDataset(
         self,
@@ -56,9 +58,12 @@ class ImageDataset(QtCore.QObject):
         self.iWorker.progress.connect(self.progressUpdate)
         self.iWorker.finished.connect(self.importFinished)
         self.iWorker.dataYamlPathFound.connect(self.setDataYamlPath)
+        self.iWorker.error.connect(self.error)
 
         self.iWorker.finished.connect(self.iWorkerThread.quit)
         self.iWorker.finished.connect(self.iWorker.deleteLater)
+        self.iWorker.error.connect(self.iWorker.deleteLater)
+        self.iWorker.error.connect(self.iWorkerThread.quit)
         self.iWorkerThread.finished.connect(self.iWorkerThread.deleteLater)
 
         self.iWorkerThread.start()
@@ -67,7 +72,8 @@ class ImageDataset(QtCore.QObject):
         self,
         trainDataPercentage: int,
         numOfWorkers: int,
-        generateSynthetic: bool,
+        genSyntheticTrain: bool,
+        genSyntheticVal: bool,
         separateByClasses: bool,
         generateNameFromClass: bool,
         exportOriginal: bool,
@@ -80,7 +86,7 @@ class ImageDataset(QtCore.QObject):
         self.finishedWorkers = 0
 
         # split train and validation data
-        maxTrainImages = int((len(SharedValues().imageSamples) / 100.0) * trainDataPercentage)
+        maxTrainImages = int(len(SharedValues().imageSamples) * (trainDataPercentage / 100.0))
 
         trainImages = 0
         for imageSample in SharedValues().imageSamples:
@@ -105,7 +111,6 @@ class ImageDataset(QtCore.QObject):
         indexEnd = samplesPerWorker + additionalSamples  # add additional work to first
         for i in range(0, numOfWorkers):
             self.eWorkerThreads.append(QThread())
-
             worker = ExportWorker(
                 imageSamples=SharedValues().imageSamples[indexStart:indexEnd],
                 filterPresets=SharedValues().filterPresets,
@@ -113,7 +118,8 @@ class ImageDataset(QtCore.QObject):
                 trainLabelsPath=self.trainLabelsPath,
                 valImagesPath=self.valImagesPath,
                 valLabelsPath=self.valLabelsPath,
-                generateSynthetic=generateSynthetic,
+                genSyntheticTrain=genSyntheticTrain,
+                genSyntheticVal=genSyntheticVal,
                 separateByClasses=separateByClasses,
                 generateNameFromClass=generateNameFromClass,
                 exportOriginal=exportOriginal,

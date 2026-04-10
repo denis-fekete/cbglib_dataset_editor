@@ -73,9 +73,7 @@ class ImageSample:
         self._loaded = False
         self.isForTraining = False
 
-    def _loadImageAndLabel(
-        self, skipLabel: bool = False, skipImage: bool = False
-    ) -> None:
+    def _loadImageAndLabel(self, skipLabel: bool = False, skipImage: bool = False) -> None:
         """
         Opens image and its label file from `imagePath` and `labelPath`. Dimensions of image are
         stored in internal list of `LabelBoxes` `_labelBoxes`. Checks for existence of both files.
@@ -115,9 +113,7 @@ class ImageSample:
                         x, y, w, h = Norm2Pixels(x, y, w, h, self.width, self.height)
                         self.labelBoxes.append(LabelBox(x, y, w, h, label))
                 except:
-                    raise Exception(
-                        f"Error: Label image exists but cannot be read: {lblPath}"
-                    )
+                    raise Exception(f"Error: Label image exists but cannot be read: {lblPath}")
 
     def load(self, selectedColor: QColor, defaultColor: QColor) -> None:
         """
@@ -134,11 +130,7 @@ class ImageSample:
                 newLabel = ImageLabelBox(
                     Box(label.x, label.y, label.width, label.height),
                     label.label,
-                    (
-                        self.labelsDict[label.label].name
-                        if (label.label >= 0)
-                        else "default"
-                    ),
+                    (self.labelsDict[label.label].name if (label.label >= 0) else "default"),
                     self._screenScaleText_fn,
                     self.rect(),
                     selectedColor=selectedColor,
@@ -176,10 +168,47 @@ class ImageSample:
         self.cvImage = None
         self._loaded = False
 
+    def generatePathToFile(
+        self,
+        rootPath: str,
+        separateByClass: bool,
+        isImage: bool,
+        hasher: None | cv.img_hash.AverageHash = None,
+    ) -> Path:
+        """Generates file and its full path from the rootPath"""
+        if self.cvImage is None:  # load image and its labels
+            self._loadImageAndLabel(skipLabel=False)
+
+        className = self.getClassName()
+
+        if hasher is not None:
+            fileName = self.generateNameFromImage(className, hasher)
+        else:
+            fileName = self.name
+
+        filePath = Path(rootPath)
+
+        if separateByClass:
+            filePath /= className
+
+        filePath.mkdir(exist_ok=True)  # check if directory exists, if not create it
+
+        if isImage:
+            filePath /= fileName + self.imageExt
+        else:
+            if self.labelExt is None:
+                self.labelExt = ".txt"
+            filePath /= fileName + self.labelExt
+
+        if filePath.exists():
+            filePath = filePath.with_name(f"{filePath.stem}_1{filePath.suffix}")
+
+        return filePath
+
     def save(
         self,
-        exportImagePath: str | None = None,
-        exportLabelPath: str | None = None,
+        exportImagePath: str,
+        exportLabelPath: str,
         separateByClasses: bool = False,
         hasher: None | cv.img_hash.AverageHash = None,
     ) -> None:
@@ -188,70 +217,27 @@ class ImageSample:
         If parameters are not defined default values for from `self.imagePath` `and self.labelPath`
         will be used.
         """
-        imagePath = exportImagePath if (exportImagePath is not None) else self.imagePath
-        labelPath = (
-            exportLabelPath
-            if (exportLabelPath is not None)
-            else self.labelPath if (self.labelPath is not None) else ""
+
+        imagePath = self.generatePathToFile(
+            exportImagePath, separateByClasses, isImage=True, hasher=hasher
         )
 
-        if not Path(imagePath).exists():
-            raise Exception("Image path for saving ImageSample is not valid")
-        if not Path(labelPath).exists():
-            raise Exception("Label path for saving ImageSample is not valid")
-
-        fullImagePath = Path(imagePath)
-
-        if self.cvImage is None:
-            self._loadImageAndLabel(skipLabel=False)
-
-        className = self.getClassName()
-
-        if separateByClasses:
-            fullImagePath /= className
-
-        fullImagePath.mkdir(exist_ok=True)
-
-        if hasher is not None:
-            fullImagePath /= (
-                self.generateNameFromImage(className, hasher) + self.imageExt
-            )
-        else:
-            fullImagePath /= self.name + self.imageExt
-
-        if fullImagePath.exists():
-            fullImagePath = Path(fullImagePath.stem + "_1" + fullImagePath.suffix)
-
         if self.cvImage is not None:
-            cv.imwrite(str(fullImagePath.resolve()), self.cvImage)
+            cv.imwrite(str(imagePath.resolve()), self.cvImage)
         else:
-            print(
-                f"Error: Failed to save image, self.cvImage was None. Try to continue exporting."
-            )
+            print(f"Error: Failed to save image, self.cvImage was None. Try to continue exporting.")
             return
 
-        labelExt = self.labelExt if (self.labelExt is not None) else ".txt"
+        if len(self.labelBoxes) > 0:  # labelBoxes loaded from first generatePathToFile()
+            labelPath = self.generatePathToFile(
+                exportLabelPath, separateByClasses, isImage=False, hasher=hasher
+            )
 
-        fullLabelPath = Path(labelPath)
-
-        if separateByClasses:
-            fullLabelPath /= className
-
-        fullLabelPath.mkdir(exist_ok=True)
-
-        if hasher is not None:
-            fullLabelPath /= self.generateNameFromImage(className, hasher) + labelExt
-        else:
-            fullLabelPath /= self.name + labelExt
-
-        if fullLabelPath.exists():
-            fullLabelPath = Path(fullLabelPath.stem + "_1" + fullLabelPath.suffix)
-
-        with open(fullLabelPath, "w") as f:
-            for labelBox in self.labelBoxes:
-                x, y, w, h = labelBox.getDimensionTuple()
-                x, y, w, h = Pixels2Norm(x, y, w, h, self.width, self.height)
-                f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
+            with open(labelPath, "w") as f:
+                for labelBox in self.labelBoxes:
+                    x, y, w, h = labelBox.getDimensionTuple()
+                    x, y, w, h = Pixels2Norm(x, y, w, h, self.width, self.height)
+                    f.write(f"{labelBox.label} {x} {y} {w} {h}\n")
 
     def reloadImageLabels(self) -> None:
         """Reloads all labels `ImageLabelBoxes` in current ImageSample"""
@@ -298,20 +284,26 @@ class ImageSample:
         else:
             return ""
 
-    def generateNameFromImage(
-        self, className: None | str, hasher: cv.img_hash.AverageHash
-    ) -> str:
+    def generateNameFromImage(self, className: None | str, hasher: cv.img_hash.AverageHash) -> str:
         if className is None:
             className = self.getClassName()
+
+        if self.cvImage is None:  # if image was not loaded, load it
+            self._loadImageAndLabel(skipLabel=False)
+
         if self.cvImage is not None:
             hsh = hasher.compute(self.cvImage)
             hshHex = hsh.flatten().tobytes().hex()
 
             return f"{className}_{str(hshHex)}"
         else:
+            print("ERROR: Image could not be loaded in generateNameFromImage()")
             return className
 
     def getClassName(self) -> str:
+        if self.cvImage is None:  # if image was not loaded, load it
+            self._loadImageAndLabel(skipLabel=False)
+
         if len(self.labelBoxes) == 1:
             classId = self.labelBoxes[0].label
             return self.labelsDict[classId].name

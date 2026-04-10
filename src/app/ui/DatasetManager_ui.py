@@ -264,27 +264,16 @@ class Ui_DatasetManager(object):
 
         self.gridLayout_3 = QGridLayout()
         self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.genNamesCheckBox = QCheckBox(self.importExportWidget)
-        self.genNamesCheckBox.setObjectName(u"genNamesCheckBox")
+        self.workerThreadsLabel = QLabel(self.importExportWidget)
+        self.workerThreadsLabel.setObjectName(u"workerThreadsLabel")
+        self.workerThreadsLabel.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
-        self.gridLayout_3.addWidget(self.genNamesCheckBox, 2, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.workerThreadsLabel, 0, 4, 1, 1)
 
-        self.trainPercentSpinBox = QSpinBox(self.importExportWidget)
-        self.trainPercentSpinBox.setObjectName(u"trainPercentSpinBox")
-        self.trainPercentSpinBox.setMaximum(100)
-        self.trainPercentSpinBox.setValue(80)
+        self.exportOriginalCheckBox = QCheckBox(self.importExportWidget)
+        self.exportOriginalCheckBox.setObjectName(u"exportOriginalCheckBox")
 
-        self.gridLayout_3.addWidget(self.trainPercentSpinBox, 0, 0, 1, 1)
-
-        self.genSyntheticCheckBox = QCheckBox(self.importExportWidget)
-        self.genSyntheticCheckBox.setObjectName(u"genSyntheticCheckBox")
-
-        self.gridLayout_3.addWidget(self.genSyntheticCheckBox, 2, 1, 1, 1)
-
-        self.separateCheckBox = QCheckBox(self.importExportWidget)
-        self.separateCheckBox.setObjectName(u"separateCheckBox")
-
-        self.gridLayout_3.addWidget(self.separateCheckBox, 0, 1, 1, 1)
+        self.gridLayout_3.addWidget(self.exportOriginalCheckBox, 0, 2, 1, 1)
 
         self.workerThreadsSpinBox = QSpinBox(self.importExportWidget)
         self.workerThreadsSpinBox.setObjectName(u"workerThreadsSpinBox")
@@ -293,16 +282,32 @@ class Ui_DatasetManager(object):
 
         self.gridLayout_3.addWidget(self.workerThreadsSpinBox, 2, 4, 1, 1)
 
-        self.exportOriginalCheckBox = QCheckBox(self.importExportWidget)
-        self.exportOriginalCheckBox.setObjectName(u"exportOriginalCheckBox")
+        self.separateCheckBox = QCheckBox(self.importExportWidget)
+        self.separateCheckBox.setObjectName(u"separateCheckBox")
 
-        self.gridLayout_3.addWidget(self.exportOriginalCheckBox, 0, 2, 1, 1)
+        self.gridLayout_3.addWidget(self.separateCheckBox, 0, 1, 1, 1)
 
-        self.workerThreadsLabel = QLabel(self.importExportWidget)
-        self.workerThreadsLabel.setObjectName(u"workerThreadsLabel")
-        self.workerThreadsLabel.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
+        self.trainPercentSpinBox = QSpinBox(self.importExportWidget)
+        self.trainPercentSpinBox.setObjectName(u"trainPercentSpinBox")
+        self.trainPercentSpinBox.setMaximum(100)
+        self.trainPercentSpinBox.setValue(80)
 
-        self.gridLayout_3.addWidget(self.workerThreadsLabel, 0, 4, 1, 1)
+        self.gridLayout_3.addWidget(self.trainPercentSpinBox, 0, 0, 1, 1)
+
+        self.genNamesCheckBox = QCheckBox(self.importExportWidget)
+        self.genNamesCheckBox.setObjectName(u"genNamesCheckBox")
+
+        self.gridLayout_3.addWidget(self.genNamesCheckBox, 2, 2, 1, 1)
+
+        self.genSyntheticValCheckBox = QCheckBox(self.importExportWidget)
+        self.genSyntheticValCheckBox.setObjectName(u"genSyntheticValCheckBox")
+
+        self.gridLayout_3.addWidget(self.genSyntheticValCheckBox, 2, 1, 1, 1)
+
+        self.genSyntheticTrainCheckBox = QCheckBox(self.importExportWidget)
+        self.genSyntheticTrainCheckBox.setObjectName(u"genSyntheticTrainCheckBox")
+
+        self.gridLayout_3.addWidget(self.genSyntheticTrainCheckBox, 2, 0, 1, 1)
 
 
         self.gridLayout.addLayout(self.gridLayout_3, 5, 0, 1, 3)
@@ -394,12 +399,13 @@ class Ui_DatasetManager(object):
         self.importLabel.setText(QCoreApplication.translate("DatasetManager", u"Import path:", None))
         self.exportButton.setText(QCoreApplication.translate("DatasetManager", u"Export", None))
         self.importButton.setText(QCoreApplication.translate("DatasetManager", u"Import", None))
-        self.genNamesCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate names", None))
-        self.trainPercentSpinBox.setPrefix(QCoreApplication.translate("DatasetManager", u"Traid data %:  ", None))
-        self.genSyntheticCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate synthetic data", None))
-        self.separateCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Separate into subdirectories", None))
-        self.exportOriginalCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Export original image", None))
         self.workerThreadsLabel.setText(QCoreApplication.translate("DatasetManager", u"Export Worker threads:", None))
+        self.exportOriginalCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Export original image", None))
+        self.separateCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Separate into subdirectories", None))
+        self.trainPercentSpinBox.setPrefix(QCoreApplication.translate("DatasetManager", u"Traid data %:  ", None))
+        self.genNamesCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate names", None))
+        self.genSyntheticValCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate synthetic for validation", None))
+        self.genSyntheticTrainCheckBox.setText(QCoreApplication.translate("DatasetManager", u"Generate synthetic for training", None))
         self.exportLabel.setText(QCoreApplication.translate("DatasetManager", u"Export path:", None))
         self.exportOpenButton.setText(QCoreApplication.translate("DatasetManager", u"Open", None))
         self.importOpenButton.setText(QCoreApplication.translate("DatasetManager", u"Open", None))

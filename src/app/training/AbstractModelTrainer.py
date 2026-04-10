@@ -41,3 +41,8 @@ class AbstractModelTrainer(QObject, metaclass=ABCQObjectMeta):
     def validateDataset(self, datasetPath: str) -> tuple[bool, str]:
         """Method returns `tuple[true, '']` on successfully validated dataset or `tuple[false, errorMessage]` on fail"""
         pass
+
+    @abstractmethod
+    def exportONNX(self):
+        """Exports trained model into ONNX format"""
+        pass

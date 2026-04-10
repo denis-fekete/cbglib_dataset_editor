@@ -17,7 +17,8 @@ from app.synthetic import FilterPreset
 class DatasetSettings:
     generateNames: bool
     separateToSubdirectories: bool
-    generateSynthetic: bool
+    generateSyntheticTrain: bool
+    generateSyntheticVal: bool
     trainDataPercent: int
     importPath: str
     workers: int
@@ -44,7 +45,7 @@ class TrainingSettings:
     numberOfEpochs: int
     batchSize: int
     modelOutputPath: str
-    modelName: str
+    onnxExport: bool
 
 
 @dataclass_json

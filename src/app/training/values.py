@@ -12,7 +12,7 @@ YOLO_V8_M_MODEL_INDEX = 1
 YOLO_V11_N_MODEL_INDEX = 2
 YOLO_V11_M_MODEL_INDEX = 3
 YOLO_V26_N_MODEL_INDEX = 4
-YOLO_V26_N_SEG_MODEL_INDEX = 20
+YOLO_V26_M_MODEL_INDEX = 5
 FASTER_RCNN_MODEL_INDEX = 30
 
 MODELS_NAMES = {
@@ -21,7 +21,7 @@ MODELS_NAMES = {
     YOLO_V11_N_MODEL_INDEX: "Yolo 11 Nano from Ultralytics",
     YOLO_V11_M_MODEL_INDEX: "Yolo 11 Medium from Ultralytics",
     YOLO_V26_N_MODEL_INDEX: "Yolo 26 Nano from Ultralytics",
-    YOLO_V26_N_SEG_MODEL_INDEX: "Yolo 26 Nano Segment from Ultralytics",
+    YOLO_V26_M_MODEL_INDEX: "Yolo 26 Medium from Ultralytics",
     FASTER_RCNN_MODEL_INDEX: "Faster RCNN",
 }
 

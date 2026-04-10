@@ -49,9 +49,7 @@ class ModelTrainer(AbstractTabWidget):
         for i in range(0, len(DATASET_PATHS)):
             self.ui.datasetPathComboBox.addItem(DATASET_PATHS[i])
 
-        self.ui.datasetPathComboBox.currentIndexChanged.connect(
-            self.datasetComboBoxChanged
-        )
+        self.ui.datasetPathComboBox.currentIndexChanged.connect(self.datasetComboBoxChanged)
 
         for key in MODELS_NAMES.keys():
             self.ui.modelSelectorComboBox.addItem(MODELS_NAMES[key])
@@ -110,6 +108,10 @@ class ModelTrainer(AbstractTabWidget):
             path = Path(os.getcwd()) / "models"
             self.ui.modelOutputPathLineEdit.setText(path.resolve()._str)
 
+    #######################################################
+    # Training
+    #######################################################
+
     @Slot()
     def startTraining(self) -> None:
         if self.currentModelTrainer is not None:
@@ -130,9 +132,7 @@ class ModelTrainer(AbstractTabWidget):
 
                 self.trainerThread.started.connect(self.currentModelTrainer.run)
 
-                self.currentModelTrainer.progress.connect(
-                    self.ui.trainingProgressBar.setValue
-                )
+                self.currentModelTrainer.progress.connect(self.ui.trainingProgressBar.setValue)
                 self.currentModelTrainer.status.connect(self.statusTextChanged)
                 self.currentModelTrainer.error.connect(self.showError)
                 self.currentModelTrainer.errorExit.connect(self.errorExit)
@@ -146,17 +146,14 @@ class ModelTrainer(AbstractTabWidget):
             QtWidgets.QMessageBox.critical(
                 self,
                 "Model trainer not selected",
-                "Model trainer is not selected or not supported. "
-                "Training will not start",
+                "Model trainer is not selected or not supported. " "Training will not start",
             )
-
-    #######################################################
-    # Training
-    #######################################################
 
     @Slot()
     def trainingEnded(self) -> None:
-        """_summary_"""
+        """Slot called one the training ended"""
+        if self.ui.onnxExportCheckBox.isChecked():
+            self.currentModelTrainer.exportONNX()
         self.setTabsEnabled_fn(True)
         self.ui.modelSettingsWidget.setEnabled(True)
 
@@ -183,9 +180,12 @@ class ModelTrainer(AbstractTabWidget):
         )
         self.ui.logOutputTextEdit.moveCursor(QTextCursor.End)  # pyright: ignore
 
+    @Slot(str)
     def showError(self, text: str) -> None:
+        self.setTabsEnabled_fn(True)
         QtWidgets.QMessageBox.critical(self, "Training error", text)
 
+    @Slot(str)
     def errorExit(self, text: str) -> None:
         QtWidgets.QMessageBox.critical(self, "Error occurred during training", text)
         self.trainingEnded()
@@ -203,7 +203,7 @@ class ModelTrainer(AbstractTabWidget):
         self.ui.epochsSpinBox.setValue(settings.numberOfEpochs)
 
         self.ui.modelOutputPathLineEdit.setText(settings.modelOutputPath)
-        self.ui.modelNameLineEdit.setText(settings.modelName)
+        self.ui.onnxExportCheckBox.setChecked(settings.onnxExport)
 
     def updateSettings(self):
         settings = SharedValues().settings.training
@@ -214,7 +214,7 @@ class ModelTrainer(AbstractTabWidget):
         settings.numberOfEpochs = self.ui.epochsSpinBox.value()
 
         settings.modelOutputPath = self.ui.modelOutputPathLineEdit.text()
-        settings.modelName = self.ui.modelNameLineEdit.text()
+        settings.onnxExport = self.ui.onnxExportCheckBox.isChecked()
 
     #######################################################
     # Other
@@ -228,9 +228,11 @@ class ModelTrainer(AbstractTabWidget):
         elif index == YOLO_V11_N_MODEL_INDEX:
             self.currentModelTrainer = YoloUltralyticsTrainerV11n()
         elif index == YOLO_V11_M_MODEL_INDEX:
-            self.currentModelTrainer = None
+            self.currentModelTrainer = YoloUltralyticsTrainerV11m()
         elif index == YOLO_V26_N_MODEL_INDEX:
             self.currentModelTrainer = YoloUltralyticsTrainerV26n()
+        elif index == YOLO_V26_M_MODEL_INDEX:
+            self.currentModelTrainer = YoloUltralyticsTrainerV26m()
         elif index == FASTER_RCNN_MODEL_INDEX:
             self.currentModelTrainer = None
 
