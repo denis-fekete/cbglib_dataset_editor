@@ -23,6 +23,8 @@ class AbstractModelTrainer(QObject, metaclass=ABCQObjectMeta):
     finished = Signal()
 
     connectedToThread: bool = False
+    isTraining: bool = False
+
     epochs: int | None
     workers: int | None
     batch: int | None
@@ -44,5 +46,10 @@ class AbstractModelTrainer(QObject, metaclass=ABCQObjectMeta):
 
     @abstractmethod
     def exportONNX(self):
-        """Exports trained model into ONNX format"""
+        """Exports currently loaded model into ONNX format."""
+        pass
+
+    @abstractmethod
+    def stop(self):
+        """Stop the training process of trainer."""
         pass

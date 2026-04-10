@@ -8,7 +8,7 @@ Description:
 """
 
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, Signal
 from PySide6.QtGui import QTextCursor
 
 import os
@@ -25,6 +25,8 @@ from app.ui.ModelTrainer_ui import Ui_DataTrainerWidget
 
 
 class ModelTrainer(AbstractTabWidget):
+    saveToExit = Signal()
+
     def __init__(self, setTabsEnabled_fn: Callable[[bool], None]) -> None:
         super().__init__()
         self.ui = Ui_DataTrainerWidget()
@@ -45,6 +47,7 @@ class ModelTrainer(AbstractTabWidget):
         self.ui.validateButton.clicked.connect(self.validateDataset)
         self.ui.startTrainingButton.clicked.connect(self.startTraining)
         self.ui.datasetPathLineEdit.textChanged.connect(self.datasetPathEdited)
+        self.ui.exitTrainingButton.clicked.connect(self.stopTraining)
 
         for i in range(0, len(DATASET_PATHS)):
             self.ui.datasetPathComboBox.addItem(DATASET_PATHS[i])
@@ -115,8 +118,14 @@ class ModelTrainer(AbstractTabWidget):
     @Slot()
     def startTraining(self) -> None:
         if self.currentModelTrainer is not None:
+            with open("log.txt", "w") as f:
+                f.write("Training started\n")
+
             self.setTabsEnabled_fn(False)
+            self.ui.validateButton.setEnabled(False)
+            self.ui.startTrainingButton.setEnabled(False)
             self.ui.modelSettingsWidget.setEnabled(False)
+            self.ui.exitTrainingButton.setEnabled(True)
 
             self.currentModelTrainer.epochs = self.ui.epochsSpinBox.value()
             self.currentModelTrainer.workers = self.ui.workersSpinBox.value()
@@ -154,24 +163,57 @@ class ModelTrainer(AbstractTabWidget):
         """Slot called one the training ended"""
         if self.ui.onnxExportCheckBox.isChecked():
             self.currentModelTrainer.exportONNX()
+            self.saveToExit.emit()
+        else:
+            self.saveToExit.emit()
+
         self.setTabsEnabled_fn(True)
         self.ui.modelSettingsWidget.setEnabled(True)
+        self.ui.validateButton.setEnabled(True)
+        self.ui.startTrainingButton.setEnabled(True)
+        self.ui.exitTrainingButton.setEnabled(False)
 
     @Slot()
-    def destroyTrainers(self) -> None:
+    def stopTraining(self):
+        if self.currentModelTrainer is not None:
+            self.currentModelTrainer.stop()
+
+    @Slot()
+    def closeModelTrainer(self) -> bool:
         if self.trainerThread is None:
-            return
+            return True
 
         if self.trainerThread.isRunning():
-            self.trainerThread.quit()
-            self.trainerThread.wait()
+            if self.currentModelTrainer.isTraining:
+                msgBox = QtWidgets.QMessageBox(self)
+                msgBox.setWindowTitle("Training in Progress")
+                msgBox.setText(
+                    "Training in progress.\n"
+                    "Do you want to exit after the current epoch finishes?"
+                )
+                gracefulExitButton = msgBox.addButton(
+                    "Save exit", QtWidgets.QMessageBox.ButtonRole.AcceptRole
+                )
+                forceExitButton = msgBox.addButton(
+                    "Force exit", QtWidgets.QMessageBox.ButtonRole.RejectRole
+                )
+                msgBox.setDefaultButton(forceExitButton)
+
+                msgBox.exec()
+
+                if msgBox.clickedButton() == gracefulExitButton:
+                    self.currentModelTrainer.stop()
+                    return False
 
         if self.currentModelTrainer is not None:
             self.currentModelTrainer.deleteLater()
             self.currentModelTrainer = None
 
+        self.trainerThread.quit()
         self.trainerThread.deleteLater()
         self.trainerThread = None
+
+        return True
 
     @Slot(str)
     def statusTextChanged(self, text: str) -> None:

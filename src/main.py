@@ -10,7 +10,7 @@ Description:
 """
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal, Slot, Qt
 from PySide6.QtGui import QCloseEvent
 
 from app.ui import *
@@ -121,11 +121,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Event called when window is destroyed/closed."""
-        self.modelTrainerWidget.destroyTrainers()
-
         self.saveSettings()
+        saveToExit = self.modelTrainerWidget.closeModelTrainer()
 
-        return super().closeEvent(event)
+        if saveToExit:
+            super().closeEvent(event)
+        else:
+            self.savedEvent = event.clone()
+            event.ignore()
+            self.modelTrainerWidget.saveToExit.connect(
+                self.exitApplicationAfterTraining,
+                Qt.ConnectionType.UniqueConnection,
+            )
+
+    @Slot()
+    def exitApplicationAfterTraining(self):
+        super().closeEvent(self.savedEvent)
 
 
 ##############################################################################

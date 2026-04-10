@@ -18,6 +18,7 @@ from PySide6.QtCore import Slot
 
 from pathlib import Path
 
+from ultralytics import YOLO
 from ultralytics.data.utils import check_det_dataset
 
 from .AbstractModelTrainer import AbstractModelTrainer
@@ -30,6 +31,7 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
         self._validated: bool = False
         self.dataYaml: str | None = None
         self.model = model
+        self.stopTraining = False
 
     @Slot()
     def run(self) -> None:
@@ -57,6 +59,9 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
             self.model.add_callback("on_train_epoch_end", self._epochCallback)  # type: ignore
             self.model.add_callback("on_train_start", self._trainStartCallback)  # type: ignore
             self.model.add_callback("on_train_end", self._trainEndCallback)  # type: ignore
+            self.model.add_callback("on_train_batch_start", self._trainBatchCallback)
+
+            self.isTraining = True
 
             self.model.train(  # type: ignore
                 data=self.dataYaml,
@@ -67,23 +72,46 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
                 project=self.modelPath,
                 name=self.modelName,
             )
-
-            self.finished.emit()
         except Exception as e:
             self.errorExit.emit(str(e))
-            return
 
     @Slot()
     def exportONNX(self):
-        self.model.export(
-            format="onnx", opset=12, simplify=True, dynamic=False, imgsz=640, half=False
+        bestWeights = Path(self.model.trainer.save_dir) / "weights" / "best.pt"  # type: ignore
+        bestModel = YOLO(bestWeights)
+
+        bestModel.export(
+            format="onnx",
+            opset=13,
+            simplify=True,
+            dynamic=False,
+            imgsz=640,
+            half=False,
         )
 
+    def _trainBatchCallback(self, trainer) -> None:
+        if self.stopTraining:
+            trainer.stop = True
+
+            self.status.emit("Stopping trainer, please wait for model to save")
+
     def _epochCallback(self, trainer) -> None:
+        """Ultralytics callback method called on end of each epoch."""
         msg = f"Epoch {trainer.epoch + 1}/{trainer.epochs}\n"
-        self.status.emit(msg)
+        if not self.stopTraining:
+            self.status.emit(msg)
+
+        with open("log.txt", "a") as f:
+            f.write(f"Epoch callback\n")
+            f.write(f"Epoch: {trainer.epoch}\n")
+            f.write(f"Progress send: {trainer.epoch / float(self.epochs) * 100}\n")
+            f.write(f"--------------------------------------\n")
+
+        if self.epochs is not None:
+            self.progress.emit(trainer.epoch / float(self.epochs) * 100)
 
     def _trainStartCallback(self, trainer) -> None:
+        """Ultralytics callback method called on the start of training."""
         args = trainer.args
 
         msg = (
@@ -100,18 +128,27 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
         self.status.emit(msg)
 
     def _trainEndCallback(self, trainer) -> None:
+        """Ultralytics callback method called on the end of training."""
         best = trainer.best
         last = trainer.last
 
-        msg = (
-            "------- TRAINING FINISHED -------\n"
-            f"Best model: {best}\n"
-            f"Last model: {last}\n"
-            f"Results saved to:\n{trainer.save_dir}\n"
-        )
+        if self.isTraining:
+            msg = (
+                "------- TRAINING FINISHED -------\n"
+                f"Best model: {best}\n"
+                f"Last model: {last}\n"
+                f"Results saved to:\n{trainer.save_dir}\n"
+            )
+            self.progress.emit(100)
+            self.status.emit(msg)
 
-        self.progress.emit(100)
-        self.status.emit(msg)
+        self.isTraining = False
+        self.finished.emit()
+
+    def stop(self) -> None:
+        """Stop the training process of trainer."""
+        self.stopTraining = True
+        self.status.emit("Training stop requested, please wait until models are saved.")
 
     def validateDataset(self, datasetPath: str) -> tuple[bool, str]:
         try:

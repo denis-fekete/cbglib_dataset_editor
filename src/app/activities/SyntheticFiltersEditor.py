@@ -87,14 +87,12 @@ class SyntheticFiltersEditor(AbstractTabWidget):
 
     @Slot()
     def blurSpinboxChanged(self, value: int) -> None:
-        print(f"value: {value}")
         # blur kernel requires odd numbers
         if value % 2 == 0:
             blurValue = value + 1
             self.ui.blurSpinBox.setValue(blurValue)
         else:
             blurValue = value
-        print(f"changed to: {blurValue}")
         self.ui.blurSlider.setValue(blurValue)
 
     @Slot()
