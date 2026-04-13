@@ -61,16 +61,16 @@ class ExportWorker(QObject):
         # export train data with synthetic data
         self.sFilter = SyntheticImage()
         for imageSample in self.imageSamples:
-            if imageSample.isForTraining:
+            if imageSample.isForValidation:
+                self._exportSample(
+                    imageSample, self.valImagesPath, self.valLabelsPath, self.genSyntheticVal
+                )
+            else:
                 self._exportSample(
                     imageSample,
                     self.trainImagesPath,
                     self.trainLabelsPath,
                     self.genSyntheticTrain,
-                )
-            else:
-                self._exportSample(
-                    imageSample, self.valImagesPath, self.valLabelsPath, self.genSyntheticVal
                 )
 
         self.finished.emit()

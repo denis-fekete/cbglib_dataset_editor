@@ -172,6 +172,7 @@ class ModelTrainer(AbstractTabWidget):
         self.ui.validateButton.setEnabled(True)
         self.ui.startTrainingButton.setEnabled(True)
         self.ui.exitTrainingButton.setEnabled(False)
+        self.closeModelTrainer()
 
     @Slot()
     def stopTraining(self):
@@ -230,7 +231,14 @@ class ModelTrainer(AbstractTabWidget):
     @Slot(str)
     def errorExit(self, text: str) -> None:
         QtWidgets.QMessageBox.critical(self, "Error occurred during training", text)
-        self.trainingEnded()
+        self.saveToExit.emit()
+
+        self.setTabsEnabled_fn(True)
+        self.ui.modelSettingsWidget.setEnabled(True)
+        self.ui.validateButton.setEnabled(True)
+        self.ui.startTrainingButton.setEnabled(True)
+        self.ui.exitTrainingButton.setEnabled(False)
+        self.closeModelTrainer()
 
     #######################################################
     # Settings

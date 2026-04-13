@@ -282,21 +282,7 @@ class DatasetManager(AbstractTabWidget):
         sVals.statistics.emptySamples = 0
         sVals.statistics.labelBoxes = 0
 
-        # reset labelDict count values
-        for value in SharedValues().labelsDict.values():
-            value.count = 0
-
-        for sample in SharedValues().imageSamples:
-            sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
-            boxes = len(sample.labelBoxes)
-
-            if boxes == 0:
-                sVals.statistics.emptySamples += 1
-            else:
-                sVals.statistics.labelBoxes += boxes
-
-            for labelBox in sample.labelBoxes:
-                SharedValues().labelsDict[labelBox.label].count += 1
+        self.imageDataset.calculateStatistics()
 
         sVals.statistics.classes = len(SharedValues().labelsDict)
         sVals.statistics.imageSamples = len(SharedValues().imageSamples)

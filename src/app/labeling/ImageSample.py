@@ -9,13 +9,18 @@ Description:
     objects.
 """
 
+from __future__ import annotations
+from typing import Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .LabelEntry import LabelEntry
+
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPixmap, QColor
 
 from pathlib import Path
 from datetime import datetime
 import cv2 as cv
-from typing import Callable
 
 from .converters import Norm2Pixels, Pixels2Norm, Mat2QImage
 from .LabelBox import LabelBox
@@ -71,7 +76,8 @@ class ImageSample:
         self.height: float = 0
         self._lastModified: datetime | None = None
         self._loaded = False
-        self.isForTraining = False
+        self._loadedLabels = False
+        self.isForValidation = False
 
     def _loadImageAndLabel(self, skipLabel: bool = False, skipImage: bool = False) -> None:
         """
@@ -114,6 +120,7 @@ class ImageSample:
                         self.labelBoxes.append(LabelBox(x, y, w, h, label))
                 except:
                     raise Exception(f"Error: Label image exists but cannot be read: {lblPath}")
+                self._loadedLabels = True
 
     def load(self, selectedColor: QColor, defaultColor: QColor) -> None:
         """
@@ -165,6 +172,7 @@ class ImageSample:
             self._lastModified = datetime.now()
 
         self.imageLabelBoxes.clear()
+        self._loadedLabels = False
         self.cvImage = None
         self._loaded = False
 
@@ -301,13 +309,31 @@ class ImageSample:
             return className
 
     def getClassName(self) -> str:
-        if self.cvImage is None:  # if image was not loaded, load it
-            self._loadImageAndLabel(skipLabel=False)
+        """Returns class the dominant class in image sample in string format"""
+        currentClass = self.getClass()
+
+        if currentClass == -1:
+            return "mixed"
+        elif currentClass == -2:
+            return "no_label"
+        else:
+            return self.labelsDict[currentClass].name
+
+    def getClass(self) -> int:
+        """
+        Returns class the dominant class in image sample. Return `-2` on no label, or `-1` for mixed,
+        or class index if there on
+        """
+        if not self._loadedLabels:
+            self._loadImageAndLabel(skipLabel=False, skipImage=True)
 
         if len(self.labelBoxes) == 1:
-            classId = self.labelBoxes[0].label
-            return self.labelsDict[classId].name
+            return self.labelBoxes[0].label
         elif len(self.labelBoxes) > 1:
-            return "mixed"
+            firstClass = self.labelBoxes[0].label
+            for labelBox in self.labelBoxes:
+                if firstClass != labelBox.label:
+                    return -1
+            return firstClass
         else:
-            return "no_label"
+            return -2

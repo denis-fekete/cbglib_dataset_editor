@@ -74,6 +74,7 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
             )
         except Exception as e:
             self.errorExit.emit(str(e))
+            self.isTraining = False
 
     @Slot()
     def exportONNX(self):

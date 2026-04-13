@@ -1,0 +1,5 @@
+Training started
+Epoch callback
+Epoch: 0
+Progress send: 0.0
+--------------------------------------

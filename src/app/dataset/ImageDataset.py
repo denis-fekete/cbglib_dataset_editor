@@ -21,6 +21,7 @@ from PySide6.QtCore import QThread, Slot, Signal
 from app.utils import SharedValues
 from .ExportWorker import ExportWorker
 from .ImportWorker import ImportWorker
+from app.labeling import LabelEntry
 
 
 class ImageDataset(QtCore.QObject):
@@ -81,20 +82,10 @@ class ImageDataset(QtCore.QObject):
         """Exports dataset into Ultralytics YOLO format with data.yaml"""
 
         self.exportYaml()
+        self._separateIntoTraining(trainDataPercentage)
 
         self.numOfWorkers = numOfWorkers
         self.finishedWorkers = 0
-
-        # split train and validation data
-        maxTrainImages = int(len(SharedValues().imageSamples) * (trainDataPercentage / 100.0))
-
-        trainImages = 0
-        for imageSample in SharedValues().imageSamples:
-            if random.randint(0, 100) <= trainDataPercentage and trainImages <= maxTrainImages:
-                imageSample.isForTraining = True
-                trainImages += 1
-            else:
-                imageSample.isForTraining = False
 
         # calculate progress step for each image stored
         self.progressStep = 100.0 / len(SharedValues().imageSamples)
@@ -161,7 +152,8 @@ class ImageDataset(QtCore.QObject):
 
         namesDict: dict[int, str] = {}
         for label in SharedValues().labelsDict.values():
-            namesDict[label.index] = label.name
+            if label.index != -1:  # skip mixed
+                namesDict[label.index] = label.name
 
         dataYaml = {
             "filePath": rootPath.name,
@@ -173,6 +165,47 @@ class ImageDataset(QtCore.QObject):
 
         with open(rootPath / "data.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(dataYaml, f, sort_keys=False)
+
+    def _separateIntoTraining(self, trainDataPercentage: int):
+        """"""
+        SharedValues().labelsDict[-1] = LabelEntry("mixed", -1)
+        # update LabelsDict with ImageSamples by class
+        for imageSample in SharedValues().imageSamples:
+            sampleClass = imageSample.getClass()
+            if sampleClass > -2:  # ignore no label images
+                SharedValues().labelsDict[sampleClass].samples.append(imageSample)
+
+        percent = trainDataPercentage / 100.0
+        for entry in SharedValues().labelsDict.values():
+            total = len(entry.samples)
+            forTraining = math.ceil(total * percent)
+
+            while len(entry.samples) > forTraining:
+                randomSample = random.randint(0, len(entry.samples) - 1)
+                trainingSample = entry.samples.pop(randomSample)
+                trainingSample.isForValidation = True
+
+            entry.samples.clear()
+
+        SharedValues().labelsDict.pop(-1)  # delete mixed
+
+    def calculateStatistics(self):
+        """Calculate statistics of the `ImageDataset` and update `SharedValues().statistics`"""
+        # reset labelDict count values
+        for value in SharedValues().labelsDict.values():
+            value.count = 0
+
+        for sample in SharedValues().imageSamples:
+            sample._loadImageAndLabel(skipLabel=False, skipImage=True)  # type: ignore
+            boxes = len(sample.labelBoxes)
+
+            if boxes == 0:
+                SharedValues().statistics.emptySamples += 1
+            else:
+                SharedValues().statistics.labelBoxes += boxes
+
+            for labelBox in sample.labelBoxes:
+                SharedValues().labelsDict[labelBox.label].count += 1
 
     @Slot()
     def progressSampleFinished(self):
