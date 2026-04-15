@@ -56,7 +56,7 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
 
         self.status.emit("Initializing ultralytics...")
         try:
-            self.model.add_callback("on_train_epoch_end", self._epochCallback)  # type: ignore
+            self.model.add_callback("on_train_epoch_start", self._epochStartCallback)  # type: ignore
             self.model.add_callback("on_train_start", self._trainStartCallback)  # type: ignore
             self.model.add_callback("on_train_end", self._trainEndCallback)  # type: ignore
             self.model.add_callback("on_train_batch_start", self._trainBatchCallback)
@@ -96,17 +96,11 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
 
             self.status.emit("Stopping trainer, please wait for model to save")
 
-    def _epochCallback(self, trainer) -> None:
+    def _epochStartCallback(self, trainer) -> None:
         """Ultralytics callback method called on end of each epoch."""
         msg = f"Epoch {trainer.epoch + 1}/{trainer.epochs}\n"
         if not self.stopTraining:
             self.status.emit(msg)
-
-        with open("log.txt", "a") as f:
-            f.write(f"Epoch callback\n")
-            f.write(f"Epoch: {trainer.epoch}\n")
-            f.write(f"Progress send: {trainer.epoch / float(self.epochs) * 100}\n")
-            f.write(f"--------------------------------------\n")
 
         if self.epochs is not None:
             self.progress.emit(trainer.epoch / float(self.epochs) * 100)

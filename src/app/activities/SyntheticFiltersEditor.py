@@ -169,11 +169,19 @@ class SyntheticFiltersEditor(AbstractTabWidget):
     @Slot()
     def deleteFilter(self) -> None:
         """Deletes filter from global list of filters, all keys will be moved down"""
-        index = self.ui.filterPresetTreeView.currIndex
-        if index is None:
-            return
-        SharedValues().filterPresets.pop(index)
+        SharedValues().filterPresets.pop(self.currentFilterPreset)
+        self.syntheticImage.filter = None
+
+        if self.currentFilterPreset > 0:
+            self.currentFilterPreset -= 1
+
         self.ui.filterPresetTreeView.loadFilters()
+
+        self.syntheticImage.filter = SharedValues().filterPresets[self.currentFilterPreset]
+        self.updateUIFromFilter()
+
+        if self.syntheticImage.imageReference is not None:
+            self.syntheticImage.applyFilter()
 
     def filterSelected(self, index: QModelIndex) -> None:
         """Slot called when label from `_filterSelector` was changed"""
