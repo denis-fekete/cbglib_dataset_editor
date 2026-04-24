@@ -63,7 +63,7 @@ class SyntheticImage:
             return
 
         imagePath = self.imageReference.generatePathToFile(
-            exportImagePath, separateByClasses, isImage=True, hasher=hasher
+            exportImagePath, separateByClasses, isImage=True, hasher=hasher, forceLabelLoad=True
         )
 
         filterName = self.generateFilterName(hasher)
@@ -90,7 +90,6 @@ class SyntheticImage:
             with open(labelPath, "w") as f:
                 for labelBox in self.imageReference.labelBoxes:
                     x, y, w, h = labelBox.getDimensionTuple()
-
                     if self.filter.hFlip:
                         x = self.imageReference.width - x
                     if self.filter.vFlip:

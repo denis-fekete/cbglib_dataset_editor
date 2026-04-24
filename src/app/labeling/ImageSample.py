@@ -86,7 +86,9 @@ class ImageSample:
         If image does not exist an exception is raised. For non existing label file no exception is raised.
         """
 
+        print(f"DEBUG:_loadImageAndLabel(labelSkip={skipLabel}, skipImage={skipImage}")
         if not skipImage:
+            print("DEBUG: loaded image")
             imgPath = Path(self.rootPath) / self.imagePath / (self.name + self.imageExt)
             if imgPath.is_file():
                 self.cvImage = cv.imread(imgPath.resolve()._str)  # type: ignore
@@ -94,7 +96,15 @@ class ImageSample:
             else:
                 raise Exception(f"Error: Image file does not exist: {imgPath}")
 
+        if self.labelPath is None:
+            print("DEBUG: labelPath is none")
+
+        if self.labelExt is None:
+            print("DEBUG: labelExt is none")
+
         if not skipLabel and self.labelPath is not None and self.labelExt is not None:
+
+            print("DEBUG: loaded label")
             lblPath = Path(self.rootPath) / self.labelPath / (self.name + self.labelExt)
             if lblPath.is_file():
                 lastModified = datetime.fromtimestamp(lblPath.stat().st_mtime)
@@ -182,10 +192,13 @@ class ImageSample:
         separateByClass: bool,
         isImage: bool,
         hasher: None | cv.img_hash.AverageHash = None,
+        forceLabelLoad: bool = False,
     ) -> Path:
         """Generates file and its full path from the rootPath"""
         if self.cvImage is None:  # load image and its labels
-            self._loadImageAndLabel(skipLabel=False)
+            self._loadImageAndLabel(skipLabel=False, skipImage=False)
+        elif forceLabelLoad:  # for synthetic data, image is loaded from filter, but labels are not
+            self._loadImageAndLabel(skipLabel=False, skipImage=True)
 
         className = self.getClassName()
 
@@ -205,6 +218,7 @@ class ImageSample:
             filePath /= fileName + self.imageExt
         else:
             if self.labelExt is None:
+                print("DEBUG: labelExt is none, adding .txt")
                 self.labelExt = ".txt"
             filePath /= fileName + self.labelExt
 
