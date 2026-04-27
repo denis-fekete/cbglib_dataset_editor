@@ -63,6 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.datasetWidget.onImportStart.connect(self.dataLabelerWidget.clearCurrentImageSample)
         self.datasetWidget.onImportEnded.connect(self.dataLabelerWidget.reloadImageSamplesTree)
+        self.datasetWidget.onExportEnded.connect(self.dataLabelerWidget.exportEnded)
 
         self.ui.tabWidget.addTab(self.datasetWidget, "Dataset")
         self.ui.tabWidget.addTab(self.dataLabelerWidget, "Image labeling")
@@ -123,16 +124,30 @@ class MainWindow(QtWidgets.QMainWindow):
         """Event called when window is destroyed/closed."""
         self.saveSettings()
         saveToExit = self.modelTrainerWidget.closeModelTrainer()
-
-        if saveToExit:
-            super().closeEvent(event)
-        else:
+        if not saveToExit:
             self.savedEvent = event.clone()
             event.ignore()
-            self.modelTrainerWidget.saveToExit.connect(
+            self.modelTrainerWidget.safeToExit.connect(
                 self.exitApplicationAfterTraining,
                 Qt.ConnectionType.UniqueConnection,
             )
+            return
+
+        saveToExit = self.dataLabelerWidget.safeToExit()
+        if not saveToExit:
+            warningReply = QtWidgets.QMessageBox.warning(
+                self,
+                "Warning",
+                "Unsaved changes were made in 'Labeling' tab, please export your dataset to keep changes. Press cancel to return and save changes.",
+                QtWidgets.QMessageBox.StandardButton.Ignore
+                | QtWidgets.QMessageBox.StandardButton.Cancel,
+            )
+
+            if warningReply == QtWidgets.QMessageBox.StandardButton.Cancel:
+                event.ignore()
+                return
+
+        super().closeEvent(event)
 
     @Slot()
     def exitApplicationAfterTraining(self):

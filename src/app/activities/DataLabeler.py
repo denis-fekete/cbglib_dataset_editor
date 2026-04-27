@@ -36,6 +36,7 @@ class DataLabeler(AbstractTabWidget):
         self.imageAnalyzer: ImageAnalyzer | None = None
         self.labelDeleteButtonsInitialized: bool = False
         self.ignoreImageSampleChanged = False
+        self.unsavedChanges = False
 
         self._connectUI()
         self._setupShortcuts()
@@ -67,14 +68,15 @@ class DataLabeler(AbstractTabWidget):
 
         self.ui.previousSampleButton.clicked.connect(self.nextImageSample)
         self.ui.nextSampleButton.clicked.connect(self.nextImageSample)
-        self.ui.imageSampleTreeView.selectedSampleChanged.connect(
-            self.imageSampleChanged
-        )
+        self.ui.imageSampleTreeView.selectedSampleChanged.connect(self.imageSampleChanged)
 
         self.ui.newClassLabelButton.clicked.connect(self.classLabelsNewEntry)
         self.ui.deleteClassLabelButton.clicked.connect(self.classLabelsDeleteEntry)
         self.ui.labelSelectorTreeView.dataEdited.connect(self.classLabelsEdited)
         self.ui.labelSelectorTreeView.labelsChanged.connect(self.classLabelsChanged)
+
+        self.ui.modelVersionComboBox.addItem("Yolo v8 to v11")
+        self.ui.modelVersionComboBox.addItem("Yolo v26")
 
     def _setupShortcuts(self) -> None:
         """Initializes shortcuts"""
@@ -106,9 +108,7 @@ class DataLabeler(AbstractTabWidget):
 
         scale = min(wScale, hScale)
 
-        SCALE_CONST = (
-            0.02  # constant for zooming out move to get rid of sliders on sides
-        )
+        SCALE_CONST = 0.02  # constant for zooming out move to get rid of sliders on sides
         self.ui.graphicsView.scale(scale - SCALE_CONST, scale - SCALE_CONST)
 
     def loadImageSample(self) -> None:
@@ -189,13 +189,12 @@ class DataLabeler(AbstractTabWidget):
         self.ui.graphicsView.selectedItem = newLabelBox
         self.ui.graphicsView.selectedItem.setSelected(True)
 
+        self.unsavedChanges = True
+
     @Slot()
     def imageLabelBoxDeleteClicked(self) -> None:
         """Deletes currently selected `ImageLabelBox` from `currentImageSample`"""
-        if (
-            self.currentImageSample is not None
-            and self.ui.graphicsView.selectedItem is not None
-        ):
+        if self.currentImageSample is not None and self.ui.graphicsView.selectedItem is not None:
             self.currentImageSample.remove(self.ui.graphicsView.selectedItem)
             self._scene.removeItem(self.ui.graphicsView.selectedItem)
 
@@ -206,6 +205,8 @@ class DataLabeler(AbstractTabWidget):
             )
 
         self.ui.graphicsView.selectedItem = None
+
+        self.unsavedChanges = True
 
     @Slot()
     def updateImageLabelBoxColors(self) -> None:
@@ -262,12 +263,15 @@ class DataLabeler(AbstractTabWidget):
             if self.currentImageSample is not None:
                 self.currentImageSample.reloadImageLabels()
 
+        self.unsavedChanges = True
+
     @Slot()
     def classLabelsNewEntry(self) -> None:
         """Creates new `LabelEntry` into global dictionary of labels"""
         index = len(SharedValues().labelsDict)
         SharedValues().labelsDict[index] = LabelEntry("new", index)
         self.ui.labelSelectorTreeView.loadLabels()
+        self.unsavedChanges = True
 
     @Slot()
     def classLabelsDeleteEntry(self) -> None:
@@ -284,8 +288,7 @@ class DataLabeler(AbstractTabWidget):
             "Warning",
             "Deleting a class will cause all other classes to move down with their indexes. "
             "Furthermore this change is not reversible.",
-            QtWidgets.QMessageBox.StandardButton.Ok
-            | QtWidgets.QMessageBox.StandardButton.Abort,
+            QtWidgets.QMessageBox.StandardButton.Ok | QtWidgets.QMessageBox.StandardButton.Abort,
         )
 
         if warningReply == QtWidgets.QMessageBox.StandardButton.Abort:
@@ -300,9 +303,7 @@ class DataLabeler(AbstractTabWidget):
         for key in keys:
             if key > index:
                 oldValues: LabelEntry = SharedValues().labelsDict[key]
-                SharedValues().labelsDict[key - 1] = LabelEntry(
-                    oldValues.name, oldValues.index
-                )
+                SharedValues().labelsDict[key - 1] = LabelEntry(oldValues.name, oldValues.index)
                 maxKey = max(key, maxKey)
 
         if len(SharedValues().labelsDict) > 0:
@@ -323,15 +324,14 @@ class DataLabeler(AbstractTabWidget):
                     imageLabelBox.label = imageLabelBox.label - 1
 
         self.ui.labelSelectorTreeView.loadLabels()
+        self.unsavedChanges = True
 
     #######################################################
     # Image Sample Browser
     #######################################################
 
     @Slot(QItemSelection, QItemSelection)
-    def imageSampleChanged(
-        self, current: QItemSelection, previous: QItemSelection
-    ) -> None:
+    def imageSampleChanged(self, current: QItemSelection, previous: QItemSelection) -> None:
         """Slot called when `ImageSample`from QTreeView dataset was changed"""
         if self.ignoreImageSampleChanged:
             return
@@ -419,7 +419,9 @@ class DataLabeler(AbstractTabWidget):
             if image is None:
                 return
 
-            detections = self.imageAnalyzer.analyze(image)
+            detections = self.imageAnalyzer.analyze(
+                image, self.ui.autoDetectThresholdSpinBox.value() / 100.0
+            )
 
             for det in detections:
                 box = ImageLabelBox(
@@ -446,8 +448,8 @@ class DataLabeler(AbstractTabWidget):
                 self.ui.modelPathLineEdit.text(),
                 EXPECTED_MODEL_SIZE,
                 (114, 114, 114),
-                0.6,
-                0.4,
+                iouThreshold=0.4,
+                yolo26=True if (self.ui.modelVersionComboBox.currentIndex() == 1) else False,
             )
 
     @Slot()
@@ -485,6 +487,11 @@ class DataLabeler(AbstractTabWidget):
         self.updateImageLabelBoxColors()
 
         self.ui.modelPathLineEdit.setText(settings.modelPath)
+        self.ui.autoDetectThresholdSpinBox.setValue(settings.autoDetectThreshold)
+        if settings.autoDetectUsingYolo26:
+            self.ui.modelVersionComboBox.setCurrentIndex(1)
+        else:
+            self.ui.modelVersionComboBox.setCurrentIndex(0)
 
     def updateSettings(self):
         """Updates current values of the SharedValues.AppSettings."""
@@ -500,10 +507,17 @@ class DataLabeler(AbstractTabWidget):
         settings.selectedColorBlue = selectedColor.blue()
 
         settings.modelPath = self.ui.modelPathLineEdit.text()
+        settings.autoDetectThreshold = self.ui.autoDetectThresholdSpinBox.value()
+        settings.autoDetectUsingYolo26 = (
+            True if (self.ui.modelVersionComboBox.currentIndex() == 1) else False
+        )
 
     #######################################################
     # Other
     #######################################################
+
+    def safeToExit(self) -> bool:
+        return not self.unsavedChanges
 
     def screenScaleText(self) -> float:
         """Returns maximum width or height of windows. Used for scaling different UI elements"""
@@ -520,6 +534,10 @@ class DataLabeler(AbstractTabWidget):
             self.loadImageSample()
 
         self.ignoreImageSampleChanged = False
+
+    @Slot()
+    def exportEnded(self):
+        self.unsavedChanges = False
 
     @Slot()
     def clearCurrentImageSample(self):

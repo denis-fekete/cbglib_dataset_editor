@@ -27,6 +27,7 @@ from app.ui.DatasetManager_ui import Ui_DatasetManager
 class DatasetManager(AbstractTabWidget):
     onImportStart = Signal()
     onImportEnded = Signal()
+    onExportEnded = Signal()
 
     def __init__(
         self,
@@ -243,6 +244,7 @@ class DatasetManager(AbstractTabWidget):
         self.ui.importExportWidget.setEnabled(True)
         self.ui.detailsWidget.setEnabled(True)
         self.setParentEnabled_fn(True)
+        self.onExportEnded.emit()
 
     #######################################################
     # Settings
