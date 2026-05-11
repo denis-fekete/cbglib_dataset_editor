@@ -26,7 +26,7 @@ import numpy as np
 from .LetterboxInfo import LetterboxInfo
 
 
-class ONNXDetector:
+class YoloOnnxDetector:
     def __init__(self, modelPath: str) -> None:
         providers = [
             "CPUExecutionProvider",
@@ -40,9 +40,7 @@ class ONNXDetector:
             modelPath, so=sessionOptions, providers=providers  # type: ignore
         )
 
-    def run(
-        self, image: cv.typing.MatLike, threshold: float, letterboxInfo: LetterboxInfo
-    ):
+    def run(self, image: cv.typing.MatLike, threshold: float, letterboxInfo: LetterboxInfo):
         """Runs `image` with ONNX Runtime model and returns its outputs"""
         input_name = self.model.get_inputs()[0].name
         output_name = self.model.get_outputs()[0].name
@@ -55,7 +53,6 @@ class ONNXDetector:
     ) -> Tuple[list[Tuple[int, int, int, int]], list[float], list[int]]:
         # model returns list, get first and dispose of batch dimension
         outputs = outputsList[0][0]
-
         # transpose
         # from ([x, y, w, h, [class_scores]], number_of_detection)
         # to (number_of_detection, [x, y, w, h, [class_scores]])
@@ -68,24 +65,24 @@ class ONNXDetector:
         classes: list[int] = []
 
         for det in transposed:
-            x, y, w, h = det[:4]
             classConfidences = det[4:]
             classId = np.argmax(classConfidences)  # type: ignore
             confidence = classConfidences[classId]
 
-            if confidence > threshold:
-                x1: float = x - w / 2
-                y1: float = y - h / 2
-                x2: float = x + w / 2
-                y2: float = y + h / 2
+            if confidence < threshold:
+                continue
 
-                # rescale to original
-                x1 = int((x1 - letterboxInfo.paddingLeft) / letterboxInfo.scale)  # type: ignore
-                y1 = int((y1 - letterboxInfo.paddingTop) / letterboxInfo.scale)  # type: ignore
-                x2 = int((x2 - letterboxInfo.paddingLeft) / letterboxInfo.scale)  # type: ignore
-                y2 = int((y2 - letterboxInfo.paddingTop) / letterboxInfo.scale)  # type: ignore
+            x, y, w, h = det[:4]
+            left: float = x - w / 2
+            top: float = y - h / 2
 
-                boxes.append((x1, y1, x2 - x1, y2 - y1))
-                confidences.append(float(confidence))  # type: ignore
-                classes.append(classId)  # type: ignore
+            # rescale to original
+            left = int((left - letterboxInfo.paddingLeft) / letterboxInfo.scale)  # type: ignore
+            top = int((top - letterboxInfo.paddingTop) / letterboxInfo.scale)  # type: ignore
+            w = int(w / letterboxInfo.scale)  # type: ignore
+            h = int(h / letterboxInfo.scale)  # type: ignore
+
+            boxes.append((left, top, w, h))
+            confidences.append(float(confidence))  # type: ignore
+            classes.append(classId)  # type: ignore
         return boxes, confidences, classes

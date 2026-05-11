@@ -1,5 +1,5 @@
 # About
-**C**ommon **B**oard **G**ames **Lib**rary Dataset editor is an graphical user interface made for creating and labeling image data. 
+Computer Vision Library for Board Games or CVLiBG's Dataset Creator is an graphical user interface made for creating and labeling image data. 
 Labeled data can be "enhanced" by synthetic data by applying different filters and create an copy of original images, therefore add more source data for training.
 Lastly application can train and export models using Ultralytics Yolo models, exported modes are converted to ONNX format and can be used for computer vision. 
 These models can be used by CBGLIB for android devices, which provides simplified computer vision for mobile devices.
@@ -12,8 +12,8 @@ These models can be used by CBGLIB for android devices, which provides simplifie
 
 #### 1. Download git repository
 ```
-git clone https://github.com/denis-fekete/cv.ilibg-dataset-creator.git
-cd cv.ilibg-dataset-creator
+git clone https://github.com/denis-fekete/cvlibg-dataset-creator.git
+cd cvlibg-dataset-creator
 ```
 
 #### 2. Create python virtual environment (not mandatory but recommended)

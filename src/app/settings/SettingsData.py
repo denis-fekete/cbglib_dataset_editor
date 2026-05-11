@@ -35,6 +35,8 @@ class LabelingSettings:
     defaultColorGreen: int
     defaultColorBlue: int
     modelPath: str
+    autoDetectUsingYolo26: bool
+    autoDetectThreshold: int
 
 
 @dataclass_json
@@ -44,6 +46,7 @@ class TrainingSettings:
     numberOfWorkers: int
     numberOfEpochs: int
     batchSize: int
+    patience: int
     modelOutputPath: str
     onnxExport: bool
 

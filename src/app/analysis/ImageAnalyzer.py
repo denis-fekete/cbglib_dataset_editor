@@ -13,7 +13,8 @@ import numpy as np
 from typing import Tuple
 from numpy.typing import NDArray
 
-from .ONNXModel import ONNXDetector
+from .YoloOnnxDetector import YoloOnnxDetector
+from .Yolo26OnnxDetector import Yolo26OnnxDetector
 from .LetterboxInfo import LetterboxInfo
 from .Detection import Detection
 
@@ -24,8 +25,8 @@ class ImageAnalyzer:
         modelPath: str,
         modelInputSize: int,
         paddingValue: Tuple[int, int, int],
-        confidenceThreshold: float,
         iouThreshold: float,
+        yolo26: bool = False,
     ) -> None:
         """
         :param modelPath: String path to the .onnx model
@@ -35,8 +36,6 @@ class ImageAnalyzer:
         :type modelInputSize: int
         :param paddingValue: Scalar of Tuple of RGB values to be put as padding for letter-boxing
         :type paddingValue: Tuple[int, int, int]
-        :param confidenceThreshold: Threshold for class score confidences, if confidence is below
-        this value a detection will be discarded
         :type confidenceThreshold: float
         :param iouThreshold: Intersection Over Union threshold, threshold for area of two detection
         to be that are crossing each other, used for applying Non Maximum Suppression
@@ -46,11 +45,16 @@ class ImageAnalyzer:
         self.modelInputSize: int = modelInputSize
         self.paddingValue: Tuple[int, int, int] = paddingValue
         self.letterBoxInfo: LetterboxInfo | None = None
-        self.confidenceThreshold = confidenceThreshold
         self.iouThreshold = iouThreshold
-        self.model = ONNXDetector(self.modelPath)
+        self.yolo26 = yolo26
+        if self.yolo26:
+            self.model = Yolo26OnnxDetector(self.modelPath)
+        else:
+            self.model = YoloOnnxDetector(self.modelPath)
 
-    def analyze(self, image: cv.Mat) -> list[Detection]:
+    def analyze(
+        self, image: cv.Mat, confThreshold: float = 0.5, yolo26: bool = False
+    ) -> list[Detection]:
         """
         Method called for analyzing and getting list of detections as result
 
@@ -62,16 +66,13 @@ class ImageAnalyzer:
         self.image: cv.Mat = image
         resized, letterboxInfo = self.resizeAndLetterBox(self.image)
         converted = self.toTensor(resized)
-        boxes, confidences, classes = self.model.run(
-            converted, self.confidenceThreshold, letterboxInfo
-        )
+
+        boxes, confidences, classes = self.model.run(converted, confThreshold, letterboxInfo)
         detections = self.applyNMS(boxes, confidences, classes)
 
         return detections
 
-    def resizeAndLetterBox(
-        self, image: cv.Mat
-    ) -> Tuple[cv.typing.MatLike, LetterboxInfo]:
+    def resizeAndLetterBox(self, image: cv.Mat) -> Tuple[cv.typing.MatLike, LetterboxInfo]:
         """
         Resizes `image` into expected input model dimensions while keeping aspect ration 1:1 and applies letterboxing if input had wrong aspect ration.
 
@@ -129,7 +130,7 @@ class ImageAnalyzer:
         indices = cv.dnn.NMSBoxes(
             boxes,
             confidences,
-            score_threshold=self.confidenceThreshold,
+            score_threshold=0.0,
             nms_threshold=self.iouThreshold,
         )
 

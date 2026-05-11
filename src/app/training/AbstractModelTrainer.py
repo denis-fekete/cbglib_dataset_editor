@@ -18,7 +18,6 @@ class ABCQObjectMeta(ABCMeta, type(QObject)):
 class AbstractModelTrainer(QObject, metaclass=ABCQObjectMeta):
     progress = Signal(int)
     status = Signal(str)
-    error = Signal(str)
     errorExit = Signal(str)
     finished = Signal()
 
@@ -28,6 +27,7 @@ class AbstractModelTrainer(QObject, metaclass=ABCQObjectMeta):
     epochs: int | None
     workers: int | None
     batch: int | None
+    patience: int = 100
     modelPath: str | None
     modelName: str | None
 

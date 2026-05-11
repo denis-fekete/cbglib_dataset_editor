@@ -15,7 +15,6 @@ import numpy as np
 import cv2 as cv
 from cv2.typing import MatLike
 from typing import Callable
-from pathlib import Path
 
 from app.widgets import *
 from app.labeling import *
@@ -30,8 +29,8 @@ class SyntheticImage:
         self.cvImage: cv.Mat | None = None
 
         self.scale = 1.0
-        self.padX = 0
-        self.padY = 0
+        self.padX: int = 0
+        self.padY: int = 0
         self.updateReference()
 
     def generateFilterName(self, hasher: None | cv.img_hash.AverageHash = None) -> str:
@@ -138,18 +137,18 @@ class SyntheticImage:
             return QRectF(0, 0, self.imageReference.width, self.imageReference.height)
 
     def width(self) -> float:
-        if self.filter.forceResolution:
-            return self.filter.resolution
+        if self.filter.forceResolution and self.cvImage is not None:
+            return self.cvImage.shape[1]
         else:
             return self.imageReference.width
 
     def height(self) -> float:
-        if self.filter.forceResolution:
-            return self.filter.resolution
+        if self.filter.forceResolution and self.cvImage is not None:
+            return self.cvImage.shape[0]
         else:
             return self.imageReference.height
 
-    def rescaleAndLetterbox(self, img: cv.Mat) -> MatLike:
+    def resizeImage(self, img: cv.Mat) -> MatLike:
         """
         Changes the resolution of image based on the filter.resolution. This will not force both
         resolutions and result in deformation of image, instead a image will be scaled by the bigger
@@ -163,26 +162,30 @@ class SyntheticImage:
         newW, newH = int(srcW * self.scale), int(srcH * self.scale)
         resized = cv.resize(img, (newW, newH))
 
-        if self.filter.applyLetterbox:
-            self.padX = (self.filter.resolution - newW) // 2
-            self.padY = (self.filter.resolution - newH) // 2
-
-            padded = cv.copyMakeBorder(
-                resized,
-                self.padY,
-                self.filter.resolution - newH - self.padY,
-                self.padX,
-                self.filter.resolution - newW - self.padX,
-                cv.BORDER_CONSTANT,
-                value=(
-                    self.filter.paddingRed,
-                    self.filter.paddingGreen,
-                    self.filter.paddingBlue,
-                ),
-            )
-            return padded
-
         return resized
+
+    def letterbox(self, img: MatLike) -> MatLike:
+        """Applied letter-boxing to input image"""
+        h = img.shape[0]
+        w = img.shape[1]
+
+        self.padX = (self.filter.resolution - w) // 2
+        self.padY = (self.filter.resolution - h) // 2
+
+        padded = cv.copyMakeBorder(
+            img,
+            self.padY,
+            self.filter.resolution - h - self.padY,
+            self.padX,
+            self.filter.resolution - w - self.padX,
+            cv.BORDER_CONSTANT,
+            value=(
+                self.filter.paddingRed,
+                self.filter.paddingGreen,
+                self.filter.paddingBlue,
+            ),
+        )
+        return padded
 
     def photometricFilters(self, img: cv.Mat | MatLike) -> MatLike:
         # apply contrast and brightness
@@ -240,7 +243,9 @@ class SyntheticImage:
             return
 
         if self.filter.forceResolution:
-            img = self.rescaleAndLetterbox(img)
+            img = self.resizeImage(img)
+            # update self.cvImage as it is used for dimensions later
+            self.cvImage = img  # type: ignore
         else:
             self.scale = 1.0
             self.padX = 0
@@ -266,6 +271,9 @@ class SyntheticImage:
                 img = cv.flip(img, 1)
             if self.filter.vFlip:
                 img = cv.flip(img, 0)
+
+        if self.filter.applyLetterbox:
+            img = self.letterbox(img)
 
         self.cvImage = img  # type: ignore
 

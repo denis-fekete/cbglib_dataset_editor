@@ -100,53 +100,10 @@ class Ui_DataTrainerWidget(object):
         self.modelSettingsWidget.setObjectName(u"modelSettingsWidget")
         self.gridLayout_3 = QGridLayout(self.modelSettingsWidget)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.datasetPathLabel = QLabel(self.modelSettingsWidget)
-        self.datasetPathLabel.setObjectName(u"datasetPathLabel")
+        self.onnxExportCheckBox = QCheckBox(self.modelSettingsWidget)
+        self.onnxExportCheckBox.setObjectName(u"onnxExportCheckBox")
 
-        self.gridLayout_3.addWidget(self.datasetPathLabel, 11, 0, 1, 1)
-
-        self.batchSizeLabel = QLabel(self.modelSettingsWidget)
-        self.batchSizeLabel.setObjectName(u"batchSizeLabel")
-
-        self.gridLayout_3.addWidget(self.batchSizeLabel, 4, 0, 1, 1)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_3.addItem(self.horizontalSpacer, 1, 0, 1, 4)
-
-        self.modelOutputPathLineEdit = QLineEdit(self.modelSettingsWidget)
-        self.modelOutputPathLineEdit.setObjectName(u"modelOutputPathLineEdit")
-
-        self.gridLayout_3.addWidget(self.modelOutputPathLineEdit, 6, 2, 1, 1)
-
-        self.epochsLabel = QLabel(self.modelSettingsWidget)
-        self.epochsLabel.setObjectName(u"epochsLabel")
-
-        self.gridLayout_3.addWidget(self.epochsLabel, 3, 0, 1, 1)
-
-        self.generateOutputDirectoryButton = QPushButton(self.modelSettingsWidget)
-        self.generateOutputDirectoryButton.setObjectName(u"generateOutputDirectoryButton")
-
-        self.gridLayout_3.addWidget(self.generateOutputDirectoryButton, 6, 3, 1, 1)
-
-        self.batchSpinBox = QSpinBox(self.modelSettingsWidget)
-        self.batchSpinBox.setObjectName(u"batchSpinBox")
-
-        self.gridLayout_3.addWidget(self.batchSpinBox, 4, 2, 1, 2)
-
-        self.modelRootLabel = QLabel(self.modelSettingsWidget)
-        self.modelRootLabel.setObjectName(u"modelRootLabel")
-
-        self.gridLayout_3.addWidget(self.modelRootLabel, 6, 0, 1, 1)
-
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout_3.addItem(self.horizontalSpacer_2, 5, 0, 1, 4)
-
-        self.modelNameLineEdit = QLineEdit(self.modelSettingsWidget)
-        self.modelNameLineEdit.setObjectName(u"modelNameLineEdit")
-
-        self.gridLayout_3.addWidget(self.modelNameLineEdit, 7, 2, 1, 1)
+        self.gridLayout_3.addWidget(self.onnxExportCheckBox, 12, 0, 1, 1)
 
         self.modelSelectorComboBox = QComboBox(self.modelSettingsWidget)
         self.modelSelectorComboBox.setObjectName(u"modelSelectorComboBox")
@@ -155,30 +112,28 @@ class Ui_DataTrainerWidget(object):
 
         self.gridLayout_3.addWidget(self.modelSelectorComboBox, 0, 2, 1, 2)
 
-        self.modelNameLabel = QLabel(self.modelSettingsWidget)
-        self.modelNameLabel.setObjectName(u"modelNameLabel")
+        self.customModelWidget = QWidget(self.modelSettingsWidget)
+        self.customModelWidget.setObjectName(u"customModelWidget")
+        self.gridLayout_4 = QGridLayout(self.customModelWidget)
+        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.customModelPathLineEdit = QLineEdit(self.customModelWidget)
+        self.customModelPathLineEdit.setObjectName(u"customModelPathLineEdit")
 
-        self.gridLayout_3.addWidget(self.modelNameLabel, 7, 0, 1, 1)
+        self.gridLayout_4.addWidget(self.customModelPathLineEdit, 0, 0, 1, 1)
 
-        self.workersLabel = QLabel(self.modelSettingsWidget)
-        self.workersLabel.setObjectName(u"workersLabel")
+        self.customModelOpenButton = QPushButton(self.customModelWidget)
+        self.customModelOpenButton.setObjectName(u"customModelOpenButton")
 
-        self.gridLayout_3.addWidget(self.workersLabel, 2, 0, 1, 1)
+        self.gridLayout_4.addWidget(self.customModelOpenButton, 0, 1, 1, 1)
 
-        self.generateNameButton = QPushButton(self.modelSettingsWidget)
-        self.generateNameButton.setObjectName(u"generateNameButton")
 
-        self.gridLayout_3.addWidget(self.generateNameButton, 7, 3, 1, 1)
-
-        self.onnxExportCheckBox = QCheckBox(self.modelSettingsWidget)
-        self.onnxExportCheckBox.setObjectName(u"onnxExportCheckBox")
-
-        self.gridLayout_3.addWidget(self.onnxExportCheckBox, 8, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.customModelWidget, 1, 0, 1, 4)
 
         self.epochsSpinBox = QSpinBox(self.modelSettingsWidget)
         self.epochsSpinBox.setObjectName(u"epochsSpinBox")
+        self.epochsSpinBox.setMaximum(9999999)
 
-        self.gridLayout_3.addWidget(self.epochsSpinBox, 3, 2, 1, 2)
+        self.gridLayout_3.addWidget(self.epochsSpinBox, 4, 2, 1, 2)
 
         self.modelSelectLabel = QLabel(self.modelSettingsWidget)
         self.modelSelectLabel.setObjectName(u"modelSelectLabel")
@@ -190,19 +145,37 @@ class Ui_DataTrainerWidget(object):
 
         self.gridLayout_3.addWidget(self.modelSelectLabel, 0, 0, 1, 1)
 
-        self.workersSpinBox = QSpinBox(self.modelSettingsWidget)
-        self.workersSpinBox.setObjectName(u"workersSpinBox")
+        self.batchSpinBox = QSpinBox(self.modelSettingsWidget)
+        self.batchSpinBox.setObjectName(u"batchSpinBox")
+        self.batchSpinBox.setMinimum(-1)
+        self.batchSpinBox.setMaximum(9999999)
 
-        self.gridLayout_3.addWidget(self.workersSpinBox, 2, 2, 1, 2)
+        self.gridLayout_3.addWidget(self.batchSpinBox, 5, 2, 1, 2)
 
-        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.workersLabel = QLabel(self.modelSettingsWidget)
+        self.workersLabel.setObjectName(u"workersLabel")
 
-        self.gridLayout_3.addItem(self.horizontalSpacer_3, 9, 0, 1, 4)
+        self.gridLayout_3.addWidget(self.workersLabel, 3, 0, 1, 1)
 
-        self.datasetPathLineEdit = QLineEdit(self.modelSettingsWidget)
-        self.datasetPathLineEdit.setObjectName(u"datasetPathLineEdit")
+        self.modelOutputPathLineEdit = QLineEdit(self.modelSettingsWidget)
+        self.modelOutputPathLineEdit.setObjectName(u"modelOutputPathLineEdit")
 
-        self.gridLayout_3.addWidget(self.datasetPathLineEdit, 12, 0, 1, 4)
+        self.gridLayout_3.addWidget(self.modelOutputPathLineEdit, 10, 2, 1, 1)
+
+        self.epochsLabel = QLabel(self.modelSettingsWidget)
+        self.epochsLabel.setObjectName(u"epochsLabel")
+
+        self.gridLayout_3.addWidget(self.epochsLabel, 4, 0, 1, 1)
+
+        self.batchSizeLabel = QLabel(self.modelSettingsWidget)
+        self.batchSizeLabel.setObjectName(u"batchSizeLabel")
+
+        self.gridLayout_3.addWidget(self.batchSizeLabel, 5, 0, 1, 1)
+
+        self.datasetPathLabel = QLabel(self.modelSettingsWidget)
+        self.datasetPathLabel.setObjectName(u"datasetPathLabel")
+
+        self.gridLayout_3.addWidget(self.datasetPathLabel, 15, 0, 1, 1)
 
         self.widget_2 = QWidget(self.modelSettingsWidget)
         self.widget_2.setObjectName(u"widget_2")
@@ -220,7 +193,66 @@ class Ui_DataTrainerWidget(object):
         self.horizontalLayout_2.addWidget(self.datasetPathComboBox)
 
 
-        self.gridLayout_3.addWidget(self.widget_2, 10, 1, 1, 3)
+        self.gridLayout_3.addWidget(self.widget_2, 14, 1, 1, 3)
+
+        self.modelRootLabel = QLabel(self.modelSettingsWidget)
+        self.modelRootLabel.setObjectName(u"modelRootLabel")
+
+        self.gridLayout_3.addWidget(self.modelRootLabel, 10, 0, 1, 1)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_3.addItem(self.horizontalSpacer, 2, 0, 1, 4)
+
+        self.generateOutputDirectoryButton = QPushButton(self.modelSettingsWidget)
+        self.generateOutputDirectoryButton.setObjectName(u"generateOutputDirectoryButton")
+
+        self.gridLayout_3.addWidget(self.generateOutputDirectoryButton, 10, 3, 1, 1)
+
+        self.datasetPathLineEdit = QLineEdit(self.modelSettingsWidget)
+        self.datasetPathLineEdit.setObjectName(u"datasetPathLineEdit")
+
+        self.gridLayout_3.addWidget(self.datasetPathLineEdit, 16, 0, 1, 4)
+
+        self.modelNameLabel = QLabel(self.modelSettingsWidget)
+        self.modelNameLabel.setObjectName(u"modelNameLabel")
+
+        self.gridLayout_3.addWidget(self.modelNameLabel, 11, 0, 1, 1)
+
+        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_3.addItem(self.horizontalSpacer_3, 13, 0, 1, 4)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout_3.addItem(self.horizontalSpacer_2, 9, 0, 1, 4)
+
+        self.generateNameButton = QPushButton(self.modelSettingsWidget)
+        self.generateNameButton.setObjectName(u"generateNameButton")
+
+        self.gridLayout_3.addWidget(self.generateNameButton, 11, 3, 1, 1)
+
+        self.modelNameLineEdit = QLineEdit(self.modelSettingsWidget)
+        self.modelNameLineEdit.setObjectName(u"modelNameLineEdit")
+
+        self.gridLayout_3.addWidget(self.modelNameLineEdit, 11, 2, 1, 1)
+
+        self.workersSpinBox = QSpinBox(self.modelSettingsWidget)
+        self.workersSpinBox.setObjectName(u"workersSpinBox")
+        self.workersSpinBox.setMaximum(9999999)
+
+        self.gridLayout_3.addWidget(self.workersSpinBox, 3, 2, 1, 2)
+
+        self.patienceSpinBox = QSpinBox(self.modelSettingsWidget)
+        self.patienceSpinBox.setObjectName(u"patienceSpinBox")
+        self.patienceSpinBox.setMaximum(9999999)
+
+        self.gridLayout_3.addWidget(self.patienceSpinBox, 6, 2, 1, 2)
+
+        self.patienceLabel = QLabel(self.modelSettingsWidget)
+        self.patienceLabel.setObjectName(u"patienceLabel")
+
+        self.gridLayout_3.addWidget(self.patienceLabel, 6, 0, 1, 1)
 
 
         self.gridLayout_2.addWidget(self.modelSettingsWidget, 0, 0, 1, 1)
@@ -238,16 +270,18 @@ class Ui_DataTrainerWidget(object):
         self.validateButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Validate Dataset", None))
         self.startTrainingButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Start training", None))
         self.exitTrainingButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Exit training", None))
-        self.datasetPathLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Dataset path:", None))
-        self.batchSizeLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Batch size:", None))
-        self.epochsLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Number of epochs:", None))
-        self.generateOutputDirectoryButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Auto Generate", None))
-        self.modelRootLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Model output root directory:", None))
-        self.modelNameLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Model output name:", None))
-        self.workersLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Number of additional workers:", None))
-        self.generateNameButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Auto Generate", None))
         self.onnxExportCheckBox.setText(QCoreApplication.translate("DataTrainerWidget", u"Export into ONNX format", None))
+        self.customModelOpenButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Open", None))
         self.modelSelectLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Select pretrained model:", None))
+        self.workersLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Number of additional workers:", None))
+        self.epochsLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Number of epochs:", None))
+        self.batchSizeLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Batch size:", None))
+        self.datasetPathLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Dataset path:", None))
         self.usePathsLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Use import/export from Dataset", None))
+        self.modelRootLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Model output root directory:", None))
+        self.generateOutputDirectoryButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Auto Generate", None))
+        self.modelNameLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Model output name:", None))
+        self.generateNameButton.setText(QCoreApplication.translate("DataTrainerWidget", u"Auto Generate", None))
+        self.patienceLabel.setText(QCoreApplication.translate("DataTrainerWidget", u"Patience:", None))
     # retranslateUi
 

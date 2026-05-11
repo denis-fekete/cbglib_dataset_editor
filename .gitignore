@@ -1,6 +1,7 @@
 *__pycache__*
 TODO.md
 yolo*.pt
+yolo*.onnx
 src/models
 src/runs
 *cache*

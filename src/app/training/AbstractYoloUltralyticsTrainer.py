@@ -71,6 +71,7 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
                 workers=self.workers,
                 project=self.modelPath,
                 name=self.modelName,
+                patience=self.patience,
             )
         except Exception as e:
             self.errorExit.emit(str(e))
@@ -78,17 +79,25 @@ class AbstractYoloUltralyticsTrainer(AbstractModelTrainer):
 
     @Slot()
     def exportONNX(self):
-        bestWeights = Path(self.model.trainer.save_dir) / "weights" / "best.pt"  # type: ignore
+        path = Path(self.model.trainer.save_dir) / "weights"  # type: ignore
+        bestWeights = path / "best.pt"  # type: ignore
+        lastModel = path / "best.onnx"  # type: ignore
         bestModel = YOLO(bestWeights)
 
-        bestModel.export(
-            format="onnx",
-            opset=13,
-            simplify=True,
-            dynamic=False,
-            imgsz=640,
-            half=False,
-        )
+        bestModel.export(format="onnx", opset=13, imgsz=640, device="cpu")
+        lastModel = path / "best.onnx"  # type: ignore
+        lastModel.rename(path / f"{self.modelName}_CPU.onnx")
+
+        bestModel.export(format="onnx", opset=13, imgsz=640, device="0")
+        lastModel = path / "best.onnx"  # type: ignore
+        lastModel.rename(path / f"{self.modelName}_GPU.onnx")
+
+        bestModel.export(format="onnx", opset=13, simplify=False, imgsz=640)
+        lastModel.rename(path / f"{self.modelName}_NONSIMPLIFIED.onnx")
+
+        bestModel.export(format="onnx", opset=13, imgsz=640, device="npu")
+        lastModel = path / "best.onnx"  # type: ignore
+        lastModel.rename(path / f"{self.modelName}_NPU.onnx")
 
     def _trainBatchCallback(self, trainer) -> None:
         if self.stopTraining:
