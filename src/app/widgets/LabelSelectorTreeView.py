@@ -4,7 +4,7 @@ Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
 Created: 2026-02-02
 
 Description:
-    Derived class from QTreeView that shows LabelEntry objects in QTreeView
+    Derived class from QTreeView that shows LabelEntry objects in QTreeView.
 """
 
 from PySide6 import QtWidgets, QtGui

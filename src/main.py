@@ -4,9 +4,12 @@ Author: Denis Fekete (xfeket01@vutbr.cz, denis.fekete02@gmail.com)
 Created: 2026-02-02
 
 Description:
-    Main file for project cbglib_dataset_editor. This application (or tool) is to provide a
+    Main file for project CVLiBG Dataset Creator. This application (or tool) provides a
     simplified way to create a labeled image datasets that can be enhanced with synthetic data.
     Application also provides a way to train data in application.
+
+    Main.py defines main window, and initializes its tabs, each containing specific functionality of
+    the application.
 """
 
 from PySide6 import QtWidgets
@@ -151,6 +154,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @Slot()
     def exitApplicationAfterTraining(self):
+        """
+        If the user confirmed that they want to wait until training process ends before exiting
+        application, this slot will be called and close the application
+        """
         super().closeEvent(self.savedEvent)
 
 

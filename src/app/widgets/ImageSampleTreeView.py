@@ -72,20 +72,21 @@ class ImageSampleTreeView(QtWidgets.QTreeView):
                         QtCore.Qt.ItemDataRole.BackgroundRole,
                     )
                 else:
-                    self.model().setData(
-                        index, None, QtCore.Qt.ItemDataRole.BackgroundRole
-                    )
+                    self.model().setData(index, None, QtCore.Qt.ItemDataRole.BackgroundRole)
                 break
 
         self.performingWarningAnalysis = False
 
-    def loadSamples(
-        self, restoreVerticalPosition: bool = False, showFull: bool = False
-    ) -> bool:
+    def loadSamples(self, restoreVerticalPosition: bool = False, showFull: bool = False) -> bool:
         """
         Loads image samples names, image path and label path into a `QTreeView`.
         Returns true if some of the samples contain incorrect labels
+
+        :param restoreVerticalPosition: is set to `True`, the vertical position will be restored on load
+        :param showFull: if set to `True`, full form will be used: name, image path, label path,
+        otherwise only name will be shown
         """
+
         if self._imageSamples is None:
             raise Exception(
                 "ImageSampleTreeView: self._imageSamples was not set."
@@ -98,28 +99,19 @@ class ImageSampleTreeView(QtWidgets.QTreeView):
         self.treeModel.clear()
 
         if showFull:
-            self.treeModel.setHorizontalHeaderLabels(
-                ["Name", "Image path", "Label path"]
-            )
-            self.header().setSectionResizeMode(
-                0, QHeaderView.ResizeMode.ResizeToContents
-            )
-            self.header().setSectionResizeMode(
-                1, QHeaderView.ResizeMode.ResizeToContents
-            )
-            self.header().setSectionResizeMode(
-                2, QHeaderView.ResizeMode.ResizeToContents
-            )
+            self.treeModel.setHorizontalHeaderLabels(["Name", "Image path", "Label path"])
+            self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+            self.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+            self.header().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         else:
             self.treeModel.setHorizontalHeaderLabels(["Name"])
-            self.header().setSectionResizeMode(
-                0, QHeaderView.ResizeMode.ResizeToContents
-            )
+            self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
         incorrectLabels = False
         item0: QtGui.QStandardItem = QtGui.QStandardItem("")
         item1: QtGui.QStandardItem = QtGui.QStandardItem("")
         item2: QtGui.QStandardItem = QtGui.QStandardItem("")
+
         for imageSample in self._imageSamples:
             item0 = QtGui.QStandardItem(imageSample.name)
 
@@ -145,6 +137,7 @@ class ImageSampleTreeView(QtWidgets.QTreeView):
         if restoreVerticalPosition:
             QTimer.singleShot(0, lambda: self.verticalScrollBar().setValue(verticalPos))  # type: ignore
 
+        # disable editing and enable clicking
         self.setEditTriggers(QtWidgets.QTreeView.EditTrigger.NoEditTriggers)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)

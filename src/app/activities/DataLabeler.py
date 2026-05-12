@@ -5,7 +5,7 @@ Created: 2026-02-02
 
 Description:
     Widget containing functionality for labeling image data that were loaded in DatasetLoader
-    widget.
+    widget. Also allows editing of LabelEntries and automatic annotation.
 """
 
 from PySide6 import QtCore, QtWidgets
